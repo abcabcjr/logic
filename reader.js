@@ -7,7 +7,7 @@ export class TextReader {
 
     peek() {
         if (this._index >= this._input.length)
-            throw new Error('Out of bounds');
+            return null;
         return this._input.charAt(this._index);
     }
 

@@ -6,10 +6,16 @@ function isValidPropName(name) {
 }
 
 function parseComposite(reader) {
-    if (reader.peek() !== '(')
-        return null;
+    if (reader.peek() === '(')
+    {
+        reader.advance();
+        let expr = parseComposite(reader);
 
-    reader.advance();
+        if (reader.peek() !== ')')
+            throw new Error('Expected expression paranthesis to be ended');
+        reader.advance();
+        return expr;
+    }
 
     let dominantOp = tryGetUnaryOperator(reader.peek());
 
@@ -23,10 +29,6 @@ function parseComposite(reader) {
         reader.advance();
         let exp2 = parseExpression(reader);
 
-        if (reader.peek() !== ')')
-            throw new ParseError('Expected composite formula to be ended with ), found ' + reader.peek() + ' instead.');
-        reader.advance();
-
         return {
             type: 'composite',
             op: dominantOp,
@@ -36,10 +38,6 @@ function parseComposite(reader) {
         reader.advance();
 
         let exp1 = parseExpression(reader);
-
-        if (reader.peek() !== ')')
-            throw new ParseError('Expected composite formula to be ended with ), found ' + reader.peek() + ' instead.');
-        reader.advance();
 
         return {
             type: 'composite',
