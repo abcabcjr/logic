@@ -1,33 +1,26 @@
-import { parseNew } from './parser.js';
-import fs from 'fs';
 
-let exprInput = [
-    '(((P ⇒ Q) ∨ S) ⇔ T)',
-    /*'((P ⇒ (Q ∧ (S ⇒ T))))',
-    '(¬(B(¬Q)) ∧ R)',
-    '(P ∧ ((¬Q) ∧ (¬(¬(Q ⇔ (¬R))))))',
-    '((P ∨ Q) ⇒ ¬(P ∨ Q)) ∧ (P ∨ (¬(¬Q)))'*/
-]
+import { printFormulaState, printFormulaStateForNInterpretations } from "./hw2.js";
 
-let output = '';
-
-function out(str) {
-    output += str + '\n';
+console.log = function(...a) {
+    document.body.innerHTML += '<div>' + a.join(' ').replace(/\n/g, '<br>') + '</div>';
 }
 
-let counter = 'a'
+let inputElem = document.getElementById('input-text');
+let runBtn = document.getElementById('run')
+let runBtn2 = document.getElementById('run2')
 
-for (let expr of exprInput) {
-    try {
-        let parsed = parseNew(expr);
-        out('(' + counter + ') ✔️ Formula ' + expr + ' is valid!');
-        out('Generated abstract syntax tree: ' + JSON.stringify(parsed, null, 4));
-    } catch (e) {
-        out(e.name + ': ' + e.message);
-        out('(' + counter + ') ❌ Formula is not valid')
-    }
-    out('\n');
-    counter = String.fromCharCode(counter.charCodeAt(0) + 1)
+runBtn.onclick = function () {
+    let inputs = inputElem.value.split('\n');
+
+    for (let input of inputs)
+        if (input.trim() !== '')
+            printFormulaState(input);    
 }
 
-fs.writeFileSync('out.txt', output);
+runBtn2.onclick = function () {
+    let inputs = inputElem.value.split('\n');
+
+    for (let input of inputs)
+        if (input.trim() !== '')
+            printFormulaStateForNInterpretations(input, 3);    
+}

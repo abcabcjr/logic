@@ -82,7 +82,7 @@ export function parseNew(input) {
         return expression;
     } catch (e) {
         if (e.name === 'ParseError')
-            throw new DisplayParseError(input, reader._index, e.message);
+            throw new DisplayParseError(input, reader.getPosition(), e.message);
         else throw e;
     }
 }
