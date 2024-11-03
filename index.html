@@ -2,16 +2,33 @@
     <title>Logic Program</title>
 
     <style>
-        html, body {
-            white-space: pre;
+        html,
+        body {
             font-family: monospace, monospace;
+        }
+
+        th,
+        td {
+            border: 1px solid;
+            text-align: center;
+        }
+
+        #content {
+            white-space: pre;
         }
     </style>
 </head>
 
 <body>
     <textarea id="input-text" placeholder="Enter WFFs here separated by newlines" cols="50" rows="5"></textarea>
+    <div id='helper'></div>
+    <h3>HW2</h3>
     <button id='run'>Run</button>
     <button id='run2'>Run for 3 interpretations</button>
+    <h3>HW3</h3>
+    <button id='formalbtn'>To formal syntax</button>
+    <button id='eqtest'>Test EQ</button>
+    <button id='lctest'>Test Logical Consequence</button>
     <script type="module" src="index.js"></script>
+    <div id='content'></div>
 </body>

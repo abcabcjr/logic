@@ -6,12 +6,15 @@ const ParserOperators = {
 
 const ParserEvals = {}
 
+const OpIdsToSymbols = {}
+
 function registerOperator(id, type, symbol, evalFn, precedence, isComposable=false) {
     ParserOperators[type][symbol] = {
         id: id,
         precedence: precedence,
         composable: isComposable
     }
+    OpIdsToSymbols[id] = symbol;
     ParserEvals[id] = evalFn;
 }
 
@@ -31,4 +34,8 @@ export function tryGetBinaryOperator(character) {
 
 export function getOpEvalFn(opId) {
     return ParserEvals[opId];
+}
+
+export function getSymbolForOperator(operatorObj) {
+    return OpIdsToSymbols[operatorObj.id];
 }

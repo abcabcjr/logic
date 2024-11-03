@@ -1,10 +1,15 @@
 import { getOpEvalFn } from "./operators.js";
+import { astToFormulaText } from './parserv2.js';
 
-export function evaluateAst(ast, interpretation) {
-    if (ast.type === 'atomic')
+export function evaluateAst(ast, interpretation, debugInfo) {
+    if (ast.type === 'atomic') {
+        debugInfo[astToFormulaText(ast)] = interpretation[ast.name];
         return interpretation[ast.name];
-    else if (ast.type === 'composite')
-        return getOpEvalFn(ast.op.id).apply(null, ast.sub.map(subFormula => evaluateAst(subFormula, interpretation)));
+    } else if (ast.type === 'composite') {
+        let value = getOpEvalFn(ast.op.id).apply(null, ast.sub.map(subFormula => evaluateAst(subFormula, interpretation, debugInfo)));
+        debugInfo[astToFormulaText(ast)] = value;
+        return value;
+    }
 
     throw new Error('Missing ast type: ' + ast.type);
 }
@@ -25,8 +30,14 @@ function* cartesian([t, ...more]) {
 }
 
 function* combine(t) {
+    let restricted = {
+        '⊤': [true],
+        '⊥': [false]
+    };
+
     let options = [false, true];
-    for (const ps of cartesian(t.map((name) => options.map((value) => ({ [name]: value })))))
+
+    for (const ps of cartesian(t.map((name) => (restricted[name] || options).map((value) => ({ [name]: value })))))
         yield Object.assign({}, ...ps)
 }
 
@@ -38,8 +49,37 @@ export function getAllInterpretationsForAst(ast) {
     return interpretations;
 }
 
-export function getSatisfiabilityState(ast) {
+export function combinePropSet(...astList) {
     let propSet = new Set();
+    for (let ast of astList)
+        getAllAtomicNamesFromAst(ast, propSet);
+    return propSet;
+}
+
+export function getCombinedEvaluation(...astList) {
+    let propSet = combinePropSet.apply(null, astList);
+
+    let interpretations = Array.from(combine(Array.from(propSet)));
+
+    let tableInfo = {};
+
+    for (let interp of interpretations) {
+        let debugInfo = {};
+        for (let ast of astList)
+            evaluateAst(ast, interp, debugInfo);
+
+        for (let formula in debugInfo) {
+            if (!tableInfo[formula])
+                tableInfo[formula] = [];
+            tableInfo[formula].push(debugInfo[formula]);
+        }
+    }
+
+    return tableInfo;
+}
+
+export function getSatisfiabilityState(ast, overridePropSet=new Set()) {
+    let propSet = new Set(overridePropSet);
     getAllAtomicNamesFromAst(ast, propSet);
 
     let interpretations = Array.from(combine(Array.from(propSet)));
@@ -47,14 +87,25 @@ export function getSatisfiabilityState(ast) {
     let satisfies = [];
     let unsatisfies = [];
 
-    for (let interp of interpretations)
-        if (evaluateAst(ast, interp))
+    let tableInfo = {};
+
+    for (let interp of interpretations) {
+        let debugInfo = {};
+        if (evaluateAst(ast, interp, debugInfo))
             satisfies.push(interp);
         else unsatisfies.push(interp);
 
+        for (let formula in debugInfo) {
+            if (!tableInfo[formula])
+                tableInfo[formula] = [];
+            tableInfo[formula].push(debugInfo[formula]);
+        }
+    }
+
     return {
         satisfies: satisfies,
-        unsatisfies: unsatisfies
+        unsatisfies: unsatisfies,
+        tableInfo: tableInfo
     }
 }
 
@@ -69,7 +120,9 @@ export function isStateSatisfiable(state) {
 export function formatInterpretation(interpretation) {
     let fmt = [];
 
-    for (let key in interpretation)
+    let keys = Object.keys(interpretation).sort();
+
+    for (let key of keys)
         fmt.push(key + ' := ' + interpretation[key]);
 
     return fmt.join(', ');

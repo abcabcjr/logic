@@ -1,12 +1,13 @@
 import { evaluateAst, formatInterpretation, getAllInterpretationsForAst, getSatisfiabilityState, isStateSatisfiable, isStateValid } from "./evaluate.js";
 import { parseNew } from "./parser.js";
+import { formatAstAsText, formatTableInfoAsHtmlTable } from './tools.js';
 
 export function printFormulaState(formulaText) {
     let ast = null;
     try {
         ast = parseNew(formulaText);
         console.log('✔️️Formula ' + formulaText + ' is well formed!');
-        console.log('Generated abstract syntax tree: ' + JSON.stringify(ast, null, 4));
+        console.log('Generated abstract syntax tree: <br></br>' + formatAstAsText(ast));
     } catch (e) {
         console.log(e.name + ': ' + e.message);
         console.log('❌ Formula is not well formed')
@@ -15,6 +16,8 @@ export function printFormulaState(formulaText) {
     console.log('');
 
     let state = getSatisfiabilityState(ast);
+
+    console.log(formatTableInfoAsHtmlTable(state.tableInfo).replace(/,/g, '').replace(/\n/g, ''));
 
     if (isStateValid(state)) {
         console.log('✔️Propositional formula ' + formulaText.trim() + ' is valid');
@@ -41,7 +44,7 @@ export function printFormulaStateForNInterpretations(formulaText, n) {
     try {
         ast = parseNew(formulaText);
         console.log('✔️Formula ' + formulaText + ' is well formed!');
-        console.log('Generated abstract syntax tree: ' + JSON.stringify(ast, null, 4));
+        console.log('Generated abstract syntax tree: <br></br>' + formatAstAsText(ast));
     } catch (e) {
         console.log(e.name + ': ' + e.message);
         console.log('❌ Formula is not well formed')

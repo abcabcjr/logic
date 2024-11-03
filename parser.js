@@ -2,80 +2,113 @@ import { tryGetBinaryOperator, tryGetUnaryOperator } from './operators.js';
 import { TextReader } from './reader.js';
 
 function isValidPropName(name) {
-    return /[A-Z]/.test(name);
+    return /[A-Z]|⊥|⊤/.test(name);
 }
 
-function parseComposite(reader) {
-    if (reader.peek() === '(')
-    {
-        reader.advance();
-        let expr = parseComposite(reader);
+function readAtomicFormula(reader) {
+    let name = reader.peek(); // should be verified before this function is called
+    reader.advance();
 
-        if (reader.peek() !== ')')
-            throw new Error('Expected expression paranthesis to be ended');
-        reader.advance();
-        return expr;
-    }
+    let restricted = {
+        '⊤': [true],
+        '⊥': [false]
+    };
 
-    let dominantOp = tryGetUnaryOperator(reader.peek());
-
-    if (!dominantOp) {
-        // binary
-        let exp1 = parseExpression(reader);
-
-        dominantOp = tryGetBinaryOperator(reader.peek());
-        if (!dominantOp)
-            throw new ParseError('Expected binary operator, found ' + reader.peek() + ' instead.');
-        reader.advance();
-        let exp2 = parseExpression(reader);
-
-        return {
-            type: 'composite',
-            op: dominantOp,
-            sub: [exp1, exp2]
-        }
-    } else {
-        reader.advance();
-
-        let exp1 = parseExpression(reader);
-
-        return {
-            type: 'composite',
-            op: dominantOp,
-            sub: [exp1]
-        }
+    return {
+        type: 'atomic',
+        restrictedValues: restricted[name] || [true, false],
+        name: name
     }
 }
 
-function parseExpression(reader) {
+function parseParenthesisFormula(reader) {
+    reader.advance(); // should be ( before this function is called
+
+    let innerFormula = parseFormula(reader);
+
+    if (reader.peek() !== ')')
+        throw new ParseError('Expected formula to be ended with ), found ' + reader.peek() + ' instead.');
+    reader.advance();
+
+    // make sure inner formula is innerFormula (prof rules)
+    if (innerFormula.type !== 'composite' || innerFormula.hasParen)
+        throw new ParseError('Parentheses can only be used for composite formulas');
+
+    innerFormula.hasParen = true;
+    return innerFormula;
+}
+
+function parsePrimary(reader) {
     let char = reader.peek();
 
-    // atomic branch
-    if (isValidPropName(char)) {
-        reader.advance();
-        return {
-            type: 'atomic',
-            name: char
+    if (isValidPropName(char))
+        return readAtomicFormula(reader);
+    else if (char === '(')
+        return parseParenthesisFormula(reader);
+    else {
+        let unaryOp = tryGetUnaryOperator(char);
+        if (unaryOp) {
+            reader.advance();
+            return {
+                type: 'composite',
+                op: unaryOp,
+                sub: [
+                    parsePrimary(reader)
+                ]
+            }
         }
     }
 
-    // composite branch
-    let expr = parseComposite(reader);
+    throw new ParseError('Expected formula, found ' + char + ' instead.');
+}
 
-    if (!expr)
-        throw new ParseError('Expected atomic or composite formula, found ' + char + ' instead.');
+function parseBinaryOperatorRightSide(reader, currentOperatorPrecedence, leftSide) {
+    while (true) {
+        let operator = tryGetBinaryOperator(reader.peek());
 
-    return expr;
+        if (!operator || operator.precedence < currentOperatorPrecedence)
+            return leftSide;
+
+        reader.advance();
+
+        let rightSideFormulas = [parsePrimary(reader)];
+
+        let nextOperator = tryGetBinaryOperator(reader.peek());
+
+        while (nextOperator && nextOperator.id == operator.id && operator.composable) {
+            reader.advance();
+            rightSideFormulas.push(parsePrimary(reader));
+            nextOperator = tryGetBinaryOperator(reader.peek());
+        }
+
+        if (nextOperator && operator.precedence < nextOperator.precedence) {
+            rightSideFormulas = parseBinaryOperatorRightSide(reader, operator.precedence + 1, rightSideFormulas[rightSideFormulas.length-1]);
+        }
+
+        leftSide = {
+            type: 'composite',
+            op: operator,
+            sub: [
+                JSON.parse(JSON.stringify(leftSide)), // copy
+            ].concat(rightSideFormulas)
+        }
+    }
+}
+
+export function parseFormula(reader) {
+    let leftSide = parsePrimary(reader);
+
+    return parseBinaryOperatorRightSide(reader, 0, leftSide);
 }
 
 export function parseNew(input) {
     const reader = new TextReader(input);
 
     try {
-        const expression = parseExpression(reader);
+        const expression = parseFormula(reader);
 
         if (reader.hasNext())
-            throw new ParseError('Expected expression to end');
+            throw new ParseError('Expected expression to end, found' + reader.peek() + ' instead.');
 
         return expression;
     } catch (e) {
