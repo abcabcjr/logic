@@ -159,6 +159,6 @@ export function testLogicalConsequence(input) {
     }
 
     if (doesHold)
-        console.log('✔️Logical equivalence ' + input.trim() + ' holds!');
-    else console.log('❌Logical equivalence ' + input.trim() + ' does NOT hold!');
+        console.log('✔️Logical consequence ' + input.trim() + ' holds!');
+    else console.log('❌Logical consequence ' + input.trim() + ' does NOT hold!');
 }

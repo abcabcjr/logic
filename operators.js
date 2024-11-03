@@ -18,11 +18,11 @@ function registerOperator(id, type, symbol, evalFn, precedence, isComposable=fal
     ParserEvals[id] = evalFn;
 }
 
-registerOperator('not', 'unary', '¬', (a) => !a, 40);
+registerOperator('not', 'unary', '¬', (a) => !a, 50);
 registerOperator('and', 'binary', '∧', (a, b) => a && b, 30, true);
-registerOperator('or', 'binary', '∨', (a, b) => a || b, 30, true);
-registerOperator('eq', 'binary', '⇔', (a, b) => a === b, 20);
-registerOperator('implies', 'binary', '⇒', (a, b) => !a || (a && b), 10);
+registerOperator('or', 'binary', '∨', (a, b) => a || b, 40, true);
+registerOperator('eq', 'binary', '⇔', (a, b) => a === b, 10);
+registerOperator('implies', 'binary', '⇒', (a, b) => !a || (a && b), 20);
 
 export function tryGetUnaryOperator(character) {
     return ParserOperators.unary[character] || null;
