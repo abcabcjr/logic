@@ -1,4 +1,7 @@
-import { parseTsvTable, astToFormulaText } from '../tools.js';
+import { parseNew } from '../parser.js';
+import { simplifyFormula } from '../simplifier.js';
+import { parseTsvTable, astToFormulaText, formatAstAsText } from '../tools.js';
+import { testEq } from './hw3.js';
 
 export function truthFunctionToFormula(tsvFn) {
     let parsed = parseTsvTable(tsvFn);
@@ -53,5 +56,15 @@ export function truthFunctionToFormula(tsvFn) {
         sub: args
     };
 
-    console.log(astToFormulaText(formulaAst))
+    console.log('Output: ' + astToFormulaText(formulaAst))
+    console.log('Simplified: ' + astToFormulaText(simplifyFormula(formulaAst)));
+}
+
+export function runSimplifier(formulaText) {
+    let parsed = parseNew(formulaText);
+
+    let simplified = simplifyFormula(parsed);
+    console.log(formatAstAsText(simplified));
+    console.log(astToFormulaText(simplified));
+    testEq(formulaText + '∼' + astToFormulaText(simplified));
 }

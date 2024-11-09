@@ -27,8 +27,24 @@ export function astToFormulaText(ast) {
     if (ast.sub.length === 1)
         result += getSymbolForOperator(ast.op) + astToFormulaText(ast.sub[0]);
     else {
-        // binary case
-        result += ast.sub.map(subAst => astToFormulaText(subAst)).join(getSymbolForOperator(ast.op));
+        // binary (or more) case
+        if (ast.sub.length === 2) {
+            result += ast.sub.map(subAst => astToFormulaText(subAst)).join(getSymbolForOperator(ast.op));
+        } else {
+            result += astToFormulaText({
+                type: 'composite',
+                op: ast.op,
+                sub: ast.sub.slice(0, 2)
+            });
+            result += getSymbolForOperator(ast.op);
+            if (ast.sub.length > 3)
+                result += astToFormulaText({
+                    type: 'composite',
+                    op: ast.op,
+                    sub: ast.sub.slice(2)
+                });
+            else result += astToFormulaText(ast.sub[2])
+        }
     }
 
     result += ')';

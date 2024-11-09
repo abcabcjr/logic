@@ -1,7 +1,7 @@
 
 import { printFormulaState, printFormulaStateForNInterpretations } from "./hw/hw2.js";
 import { showFormalSyntax, testEq, testLogicalConsequence } from './hw/hw3.js';
-import { truthFunctionToFormula } from './hw/hw4.js';
+import { runSimplifier, truthFunctionToFormula } from './hw/hw4.js';
 
 let contentElem = document.getElementById('content');
 
@@ -76,5 +76,11 @@ for (let symbol of logicSymbols) {
 let truthfnBtn = document.getElementById('truthfn');
 
 truthfnBtn.onclick = function () {
-    let formula = truthFunctionToFormula(inputElem.value.trim());
+    truthFunctionToFormula(inputElem.value.trim());
+}
+
+let simplifierBtn = document.getElementById('simplifierbtn');
+
+simplifierBtn.onclick = function () {
+    runSimplifier(inputElem.value.trim());
 }
