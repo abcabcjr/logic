@@ -1,7 +1,7 @@
-import { combinePropSet, formatInterpretation, getCombinedEvaluation, getSatisfiabilityState } from './evaluate.js';
-import { parseNew } from './parser.js';
-import { astToFormulaText } from './parserv2.js';
-import { formatTableInfoAsHtmlTable } from './tools.js';
+import { combinePropSet, formatInterpretation, getCombinedEvaluation, getSatisfiabilityState } from '../evaluate.js';
+import { parseNew } from '../parser.js';
+import { astToFormulaText } from '../tools.js';
+import { formatTableInfoAsHtmlTable } from '../tools.js';
 
 function parseStep(formulaText) {
     let ast = null;

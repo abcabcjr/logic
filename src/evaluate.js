@@ -1,5 +1,5 @@
 import { getOpEvalFn } from "./operators.js";
-import { astToFormulaText } from './parserv2.js';
+import { astToFormulaText } from './tools.js';
 
 export function evaluateAst(ast, interpretation, debugInfo) {
     if (ast.type === 'atomic') {

@@ -1,6 +1,6 @@
-import { evaluateAst, formatInterpretation, getAllInterpretationsForAst, getSatisfiabilityState, isStateSatisfiable, isStateValid } from "./evaluate.js";
-import { parseNew } from "./parser.js";
-import { formatAstAsText, formatTableInfoAsHtmlTable } from './tools.js';
+import { evaluateAst, formatInterpretation, getAllInterpretationsForAst, getSatisfiabilityState, isStateSatisfiable, isStateValid } from "../evaluate.js";
+import { parseNew } from "../parser.js";
+import { formatAstAsText, formatTableInfoAsHtmlTable } from '../tools.js';
 
 export function printFormulaState(formulaText) {
     let ast = null;

@@ -1,5 +1,4 @@
-import { astToFormulaText } from './parserv2.js';
-import { parseTsvTable } from './tools.js';
+import { parseTsvTable, astToFormulaText } from '../tools.js';
 
 export function truthFunctionToFormula(tsvFn) {
     let parsed = parseTsvTable(tsvFn);

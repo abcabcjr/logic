@@ -1,7 +1,7 @@
 
-import { printFormulaState, printFormulaStateForNInterpretations } from "./hw2.js";
-import { showFormalSyntax, testEq, testLogicalConsequence } from './hw3.js';
-import { truthFunctionToFormula } from './hw4.js';
+import { printFormulaState, printFormulaStateForNInterpretations } from "./hw/hw2.js";
+import { showFormalSyntax, testEq, testLogicalConsequence } from './hw/hw3.js';
+import { truthFunctionToFormula } from './hw/hw4.js';
 
 let contentElem = document.getElementById('content');
 
