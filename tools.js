@@ -36,3 +36,24 @@ function formatAst(ast, indent, pre = '', last='├─ ') {
 export function formatAstAsText(ast) {
     return '<div style="line-height: 0.5em;">' + formatAst(ast, '') + '</div>';
 }
+
+/* Tables */
+
+export function parseTsvTable(tsvData) {
+    let lines = tsvData.split('\n');
+
+    let tableInfo = {};
+
+    let entries = lines[0].split('\t');
+    lines = lines.slice(1);
+    for (let entry of entries)
+        tableInfo[entry] = [];
+
+    for (let line of lines) {
+        let split = line.split('\t');
+        for (let entryIdx in entries)
+            tableInfo[entries[entryIdx]].push(split[entryIdx] === '1');
+    }
+
+    return tableInfo;
+}
