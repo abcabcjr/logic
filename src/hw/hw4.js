@@ -1,6 +1,7 @@
 import { parseNew } from '../parser.js';
 import { simplifyFormula } from '../simplifier.js';
-import { parseTsvTable, astToFormulaText, formatAstAsText } from '../tools.js';
+import { convertToDNF } from '../simplifierv2.js';
+import { parseTsvTable, astToFormulaText, formatAstAsText, astToFormulaTextWithNInputGates } from '../tools.js';
 import { testEq } from './hw3.js';
 
 export function truthFunctionToFormula(tsvFn) {
@@ -66,5 +67,14 @@ export function runSimplifier(formulaText) {
     let simplified = simplifyFormula(parsed);
     console.log(formatAstAsText(simplified));
     console.log(astToFormulaText(simplified));
+    testEq(formulaText + '∼' + astToFormulaText(simplified));
+}
+
+export function runDNF(formulaText) {
+    let parsed = parseNew(formulaText);
+
+    let simplified = convertToDNF(parsed);
+    console.log(formatAstAsText(simplified));
+    console.log(astToFormulaTextWithNInputGates(simplified));
     testEq(formulaText + '∼' + astToFormulaText(simplified));
 }

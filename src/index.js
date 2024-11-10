@@ -1,7 +1,7 @@
 
 import { printFormulaState, printFormulaStateForNInterpretations } from "./hw/hw2.js";
 import { showFormalSyntax, testEq, testLogicalConsequence } from './hw/hw3.js';
-import { runSimplifier, truthFunctionToFormula } from './hw/hw4.js';
+import { runDNF, runSimplifier, truthFunctionToFormula } from './hw/hw4.js';
 
 let contentElem = document.getElementById('content');
 
@@ -83,4 +83,10 @@ let simplifierBtn = document.getElementById('simplifierbtn');
 
 simplifierBtn.onclick = function () {
     runSimplifier(inputElem.value.trim());
+}
+
+let dnfBtn = document.getElementById('dnftest');
+
+dnfBtn.onclick = function () {
+    runDNF(inputElem.value.trim());
 }
