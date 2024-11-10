@@ -120,6 +120,14 @@ export function convertToDNF(ast) {
         return convertToDNF(chainUpAst([negateFormula(ast.sub[0]), ast.sub[1]], 'or'));
     }
 
+    // convert equivalence
+    if (ast.type === 'composite' && ast.op.id === 'eq') {
+        return convertToDNF(chainUpAst([
+            chainUpAst(ast.sub, 'and'),
+            chainUpAst(ast.sub.map(sub => negateFormula(sub)), 'and')
+        ], 'or'));
+    }
+
     // Double negation
     if (ast.op.id === 'not' && ast.sub[0].type === 'composite' && ast.sub[0].op.id === 'not') {
         return convertToDNF(ast.sub[0].sub[0]);
