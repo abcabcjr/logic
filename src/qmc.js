@@ -1,5 +1,5 @@
 import { getAllAtomicNamesFromAst } from './evaluate.js';
-import { isFormulaSingleTerm } from './simplifierv2.js';
+import { isFormulaSingleTerm } from './simplifier.js';
 import { chainUpAst, makeAtomic, negateFormula } from './treebuild.js';
 
 function assert(condition) {

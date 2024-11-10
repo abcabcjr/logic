@@ -1,7 +1,6 @@
 import { parseNew } from '../parser.js';
 import { simplifyByQMC } from '../qmc.js';
-import { simplifyFormula } from '../simplifier.js';
-import { convertToDNF } from '../simplifierv2.js';
+import { convertToDNF } from '../simplifier.js';
 import { parseTsvTable, astToFormulaText, formatAstAsText, astToFormulaTextWithNInputGates } from '../tools.js';
 import { testEq } from './hw3.js';
 
@@ -59,29 +58,25 @@ export function truthFunctionToFormula(tsvFn) {
     };
 
     console.log('Output: ' + astToFormulaText(formulaAst))
-    console.log('Simplified: ' + astToFormulaText(simplifyFormula(formulaAst)));
-}
-
-export function runSimplifier(formulaText) {
-    let parsed = parseNew(formulaText);
-
-    let simplified = simplifyFormula(parsed);
-    console.log(formatAstAsText(simplified));
-    console.log(astToFormulaText(simplified));
-    testEq(formulaText + '∼' + astToFormulaText(simplified));
+    console.log('Simplified: ' + astToFormulaText(simplifyByQMC(convertToDNF(formulaAst))));
 }
 
 export function runDNF(formulaText) {
     let parsed = parseNew(formulaText);
 
-    console.log('OG:')
+    console.log('Original AST: ')
     console.log(formatAstAsText(parsed));
-    console.log('NEW:');
+    console.log('');
+
     let simplified = convertToDNF(parsed);
     console.log(formatAstAsText(simplified));
     console.log(astToFormulaTextWithNInputGates(simplified));
+    
     let qmced = simplifyByQMC(simplified);
+    console.log('Simplified AST:');
     console.log(formatAstAsText(qmced));
+    console.log('');
     console.log(astToFormulaText(qmced));
-    testEq(formulaText + '∼' + astToFormulaText(simplified));
+    console.log('---------------------------------------');
+    testEq(formulaText + '∼' + astToFormulaText(qmced));
 }
