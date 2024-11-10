@@ -1,3 +1,5 @@
+import { chainUpAst, makeAtomic, negateFormula } from './treebuild.js';
+
 function astListIncludesProp(astList, propName) {
     return astList.filter(ast => ast.name === propName).length > 0;
 }
@@ -30,13 +32,6 @@ function arePropsTheSame(prop1, prop2) {
     return true;
 }
 
-function makeAtomic(name) {
-    return {
-        type: 'atomic',
-        name: name
-    }
-}
-
 function testEquivalence(ast1, ast2) {
     return isStateValid(getSatisfiabilityState({
         type: 'composite',
@@ -47,29 +42,7 @@ function testEquivalence(ast1, ast2) {
     }));
 }
 
-function negateFormula(ast) {
-    return {
-        type: 'composite',
-        op: {
-            id: 'not'
-        },
-        sub: [ast]
-    }
-}
-
-function chainUpAst(asts, operatorId) {
-    if (asts.length === 1)
-        return asts[0];
-    return {
-        type: 'composite',
-        op: {
-            id: operatorId
-        },
-        sub: asts
-    }
-}
-
-function isFormulaSingleTerm(formulaAst) {
+export function isFormulaSingleTerm(formulaAst) {
     return formulaAst.type === 'atomic' || formulaAst.op.id === 'not';
 }
 

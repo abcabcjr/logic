@@ -1,4 +1,5 @@
 import { parseNew } from '../parser.js';
+import { simplifyByQMC } from '../qmc.js';
 import { simplifyFormula } from '../simplifier.js';
 import { convertToDNF } from '../simplifierv2.js';
 import { parseTsvTable, astToFormulaText, formatAstAsText, astToFormulaTextWithNInputGates } from '../tools.js';
@@ -79,5 +80,8 @@ export function runDNF(formulaText) {
     let simplified = convertToDNF(parsed);
     console.log(formatAstAsText(simplified));
     console.log(astToFormulaTextWithNInputGates(simplified));
+    let qmced = simplifyByQMC(simplified);
+    console.log(formatAstAsText(qmced));
+    console.log(astToFormulaText(qmced));
     testEq(formulaText + '∼' + astToFormulaText(simplified));
 }
