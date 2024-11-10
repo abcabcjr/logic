@@ -20,6 +20,15 @@ export function simplifyByQMC(ast) {
         return ast;
 
     // Formula must be a SOP
+    if (ast.op.id === 'and') {
+        ast = {
+            type: 'composite',
+            op: {
+                id: 'or'
+            },
+            sub: [ast]
+        }
+    }
     assert(ast.op.id === 'or');
 
     let minTerms = new Set();
