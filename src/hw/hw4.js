@@ -73,6 +73,9 @@ export function runSimplifier(formulaText) {
 export function runDNF(formulaText) {
     let parsed = parseNew(formulaText);
 
+    console.log('OG:')
+    console.log(formatAstAsText(parsed));
+    console.log('NEW:');
     let simplified = convertToDNF(parsed);
     console.log(formatAstAsText(simplified));
     console.log(astToFormulaTextWithNInputGates(simplified));

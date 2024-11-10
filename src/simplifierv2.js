@@ -104,8 +104,8 @@ function applyDistributivity(ast) {
                 sub: []
             }
 
-            let subList = primary.type === 'atomic' ? [primary] : primary.sub;
-            let compSubList = composite.type === 'atomic' ? [composite] : composite.sub;
+            let subList = isFormulaSingleTerm(primary) ? [primary] : primary.sub;
+            let compSubList = isFormulaSingleTerm(composite) ? [composite] : composite.sub;
 
             for (let sub1 of subList) {
                 for (let sub2 of compSubList) {
