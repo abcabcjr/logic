@@ -1,7 +1,8 @@
+import { convertToNandOnly } from "../convert.js";
 import { parseNew } from "../parser.js";
 import { simplifyByQMC } from "../qmc.js";
 import { convertToCNF, convertToDNF } from "../simplifier.js";
-import { astToFormulaTextWithNInputGates, copyAst, formatAstAsText } from "../tools.js";
+import { astToFormulaText, astToFormulaTextWithNInputGates, copyAst, formatAstAsText } from "../tools.js";
 import { testEq } from "./hw3.js";
 
 function parseStep(formulaText) {
@@ -35,4 +36,11 @@ export function showDNFandCNF(formulaText) {
 
     testEq(astToFormulaTextWithNInputGates(dnf) + '∼' + astToFormulaTextWithNInputGates(cnf));
     testEq(formulaText + '∼' + astToFormulaTextWithNInputGates(cnf));
+}
+
+export function showNandOnly(formulaText) {
+    // temp: ensure gates are binary
+    let ast = parseNew(astToFormulaText(parseNew(formulaText)));
+
+    console.log(astToFormulaText(convertToNandOnly(ast)));
 }

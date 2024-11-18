@@ -2,7 +2,7 @@
 import { printFormulaState, printFormulaStateForNInterpretations } from "./hw/hw2.js";
 import { showFormalSyntax, testEq, testLogicalConsequence } from './hw/hw3.js';
 import { runDNF, truthFunctionToFormula } from './hw/hw4.js';
-import { showDNFandCNF } from "./hw/hw5.js";
+import { showDNFandCNF, showNandOnly } from "./hw/hw5.js";
 
 let contentElem = document.getElementById('content');
 
@@ -96,4 +96,10 @@ let dnfcnfBtn = document.getElementById('dnfandcnf');
 
 dnfcnfBtn.onclick = function () {
     showDNFandCNF(inputElem.value.trim());
+}
+
+let nandonlyBtn = document.getElementById('nandonly');
+
+nandonlyBtn.onclick = function () {
+    showNandOnly(inputElem.value.trim())
 }
