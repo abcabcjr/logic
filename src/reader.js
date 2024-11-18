@@ -11,6 +11,15 @@ export class TextReader {
         return this._input.charAt(this._index);
     }
 
+    advanceSimple() {
+        this._index++;
+    }
+
+    skipSpaces() {
+        if (this.hasNext() && this.peek() === ' ')
+            this.advance();
+    }
+
     advance() {
         // skip over spaces
         do {

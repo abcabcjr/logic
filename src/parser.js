@@ -5,9 +5,19 @@ function isValidPropName(name) {
     return /[A-Z]|⊥|⊤/.test(name);
 }
 
+function isDigit(char) {
+    return /\d/.test(char);
+}
+
 function readAtomicFormula(reader) {
     let name = reader.peek(); // should be verified before this function is called
     reader.advance();
+
+    while (isDigit(reader.peek())) {
+        name += reader.peek();
+        reader.advanceSimple();
+    }
+    reader.skipSpaces();
 
     let restricted = {
         '⊤': [true],
