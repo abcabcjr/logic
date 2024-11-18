@@ -100,7 +100,7 @@ export function simplifyByQMC(ast) {
         conjunctionNodes.push(chainUpAst(nodes, 'and'));
     }
 
-    if (conjunctionNodes.length === 0)
+    if (conjunctionNodes.length === 0 || (conjunctionNodes.length === 1 && conjunctionNodes[0].type === 'composite' && conjunctionNodes[0].sub.length === 0))
         return makeAtomic('⊤');
 
     return chainUpAst(conjunctionNodes, 'or');

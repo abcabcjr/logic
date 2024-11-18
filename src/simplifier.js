@@ -274,21 +274,41 @@ function simplify(ast) {
 }
 
 export function convertToDNF(ast) {
+    if (ast.type === 'atomic')
+        return ast;
+
+    /*let subs = [];
+    for (let sub of ast.sub)
+        subs.push(convertToDNF(sub));
+    ast.sub = subs;*/
+
     ast = convertImplicationsAndEquivalences(ast);
     ast = doAssociativity(ast);
     ast = simplify(ast);
     ast = applyDeMorgan(ast);
     ast = applyDistributivity(ast, 'and');
+    
     return astPostprocess(ast, convertToDNF);
+    //return ast;
 }
 
 export function convertToCNF(ast) {
+    if (ast.type === 'atomic')
+        return ast;
+
+    /*let subs = [];
+    for (let sub of ast.sub)
+        subs.push(convertToCNF(sub));
+    ast.sub = subs;*/
+
     ast = convertImplicationsAndEquivalences(ast);
     ast = doAssociativity(ast);
-    ast = simplify(ast);
+    //ast = simplify(ast);
     ast = applyDeMorgan(ast);
     ast = applyDistributivity(ast, 'or');
+    
     return astPostprocess(ast, convertToCNF);
+    //return ast;
 }
 
 function astPostprocess(ast, simplifyFn) {

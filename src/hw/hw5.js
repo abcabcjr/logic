@@ -24,7 +24,7 @@ export function showDNFandCNF(formulaText) {
     if (!ast)
         return;
 
-    let cnf = convertToCNF(copyAst(ast));
+    let cnf = convertToCNF(convertToCNF(copyAst(ast)));
     let dnf = simplifyByQMC(convertToDNF(convertToDNF(copyAst(ast))));
 
     console.log('DNF', astToFormulaTextWithNInputGates(dnf));
