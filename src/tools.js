@@ -106,3 +106,7 @@ export function parseTsvTable(tsvData) {
 
     return tableInfo;
 }
+
+export function copyAst(ast) {
+    return JSON.parse(JSON.stringify(ast));
+}

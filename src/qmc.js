@@ -47,7 +47,12 @@ export function simplifyByQMC(ast) {
             }
         }
 
-        minTerms.add(term.join(''));
+        let newTerms = [];
+
+        expandMinterm(term, newTerms);
+
+        for (let newMinterm of newTerms)
+            minTerms.add(newMinterm.join(''));
     }
 
     let minTermsArr = Array.from(minTerms);
@@ -95,7 +100,24 @@ export function simplifyByQMC(ast) {
         conjunctionNodes.push(chainUpAst(nodes, 'and'));
     }
 
+    if (conjunctionNodes.length === 0)
+        return makeAtomic('⊤');
+
     return chainUpAst(conjunctionNodes, 'or');
+}
+
+function expandMinterm(minTerm, list) {
+    for (let i = 0; i < minTerm.length; i++) {
+        if (minTerm[i] === '-') {
+            minTerm[i] = '0';
+            expandMinterm(minTerm.slice(0), list);
+            minTerm[i] = '1';
+            expandMinterm(minTerm.slice(0), list);
+            return;
+        }
+    }
+
+    list.push(minTerm.slice(0));
 }
 
 // https://en.wikipedia.org/wiki/Quine%E2%80%93McCluskey_algorithm
