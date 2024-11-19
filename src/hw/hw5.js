@@ -1,7 +1,8 @@
 import { convertToNandOnly } from "../convert.js";
 import { parseNew } from "../parser.js";
 import { simplifyByQMC } from "../qmc.js";
-import { convertToCNF, convertToDNF } from "../simplifier.js";
+import { convertToDNF } from "../simplifier.js";
+import { convertToCNF } from "../simplifier3.js";
 import { astToFormulaText, astToFormulaTextWithNInputGates, copyAst, formatAstAsText } from "../tools.js";
 import { testEq } from "./hw3.js";
 
@@ -25,8 +26,14 @@ export function showDNFandCNF(formulaText) {
     if (!ast)
         return;
 
-    let cnf = convertToCNF(convertToCNF(copyAst(ast)));
-    let dnf = simplifyByQMC(convertToDNF(convertToDNF(copyAst(ast))));
+    let cnf = (convertToCNF(copyAst(ast)));
+    //for (let i = 0; i < 100; i++)
+    //    cnf = convertToCNF(cnf);
+    let dnf = simplifyByQMC(convertToDNF(copyAst(ast)));
+    //for (let i = 0; i < 100; i++)
+    //    cnf = convertToDNF(dnf);
+
+    //dnf = simplifyByQMC(dnf);
 
     console.log('DNF', astToFormulaTextWithNInputGates(dnf));
     console.log('CNF', astToFormulaTextWithNInputGates(cnf));

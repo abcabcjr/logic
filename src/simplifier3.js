@@ -98,12 +98,12 @@ function applyDistributivity(ast, type) {
 
         if (finalSubs.length === 1) {
             if (transformedIndices.length > 0)
-                return convertToDNF(finalSubs[0]);
+                return convertToCNF(finalSubs[0]);
             return finalSubs[0];
         } else {
             ast.sub = finalSubs;
             if (transformedIndices.length > 0)
-                return convertToDNF(ast);
+                return convertToCNF(ast);
             return ast;
         }
     }
@@ -111,18 +111,18 @@ function applyDistributivity(ast, type) {
     return ast;
 }
 
-export function convertToDNF(ast) {
+export function convertToCNF(ast) {
     if (ast.type === 'atomic')
         return ast;
 
     // convert implication
     if (ast.type === 'composite' && ast.op.id === 'implies') {
-        return convertToDNF(chainUpAst([negateFormula(ast.sub[0]), ast.sub[1]], 'or'));
+        return convertToCNF(chainUpAst([negateFormula(ast.sub[0]), ast.sub[1]], 'or'));
     }
 
     // convert equivalence
     if (ast.type === 'composite' && ast.op.id === 'eq') {
-        return convertToDNF(chainUpAst([
+        return convertToCNF(chainUpAst([
             chainUpAst(ast.sub, 'and'),
             chainUpAst(ast.sub.map(sub => negateFormula(sub)), 'and')
         ], 'or'));
@@ -130,7 +130,7 @@ export function convertToDNF(ast) {
 
     // Double negation
     if (ast.op.id === 'not' && ast.sub[0].type === 'composite' && ast.sub[0].op.id === 'not') {
-        return convertToDNF(ast.sub[0].sub[0]);
+        return convertToCNF(ast.sub[0].sub[0]);
     }
 
     // idempotence
@@ -140,7 +140,7 @@ export function convertToDNF(ast) {
 
         for (let sub of ast.sub) {
             let isNew = true;
-            let simplified = convertToDNF(sub);
+            let simplified = convertToCNF(sub);
             for (let newSub of newSubs)
                 if (arePropsTheSame(simplified, newSub)) {
                     isNew = false;
@@ -153,12 +153,12 @@ export function convertToDNF(ast) {
 
         // don't end up in infinite recursion
         if (originalLength !== ast.sub.length)
-            return convertToDNF(ast.sub.length < 2 ? ast.sub[0] : ast);
+            return convertToCNF(ast.sub.length < 2 ? ast.sub[0] : ast);
     }
     if (ast.op.id === 'eq' || ast.op.id === 'implies') {
-        if (arePropsTheSame(convertToDNF(ast.sub[0]), convertToDNF(ast.sub[1])))
+        if (arePropsTheSame(convertToCNF(ast.sub[0]), convertToCNF(ast.sub[1])))
             return makeAtomic('⊤');
-        else if (ast.op.id === 'eq' && arePropsTheSame(convertToDNF(ast.sub[0]), convertToDNF(negateFormula(ast.sub[1]))))
+        else if (ast.op.id === 'eq' && arePropsTheSame(convertToCNF(ast.sub[0]), convertToCNF(negateFormula(ast.sub[1]))))
             return makeAtomic('⊥');
     }
 
@@ -177,7 +177,7 @@ export function convertToDNF(ast) {
 
         if (modified) {
             ast.sub = newSubs;
-            return convertToDNF(ast);
+            return convertToCNF(ast);
         }
     }
 
@@ -192,8 +192,8 @@ export function convertToDNF(ast) {
     if (ast.op.id === 'and') {
         for (let i = 0; i < ast.sub.length; i++) {
             for (let j = 0; j < ast.sub.length; j++)
-                if (arePropsTheSame(convertToDNF(ast.sub[i]),
-                    convertToDNF(negateFormula(convertToDNF(ast.sub[j])))))
+                if (arePropsTheSame(convertToCNF(ast.sub[i]),
+                    convertToCNF(negateFormula(convertToCNF(ast.sub[j])))))
                     return makeAtomic('⊥');
         }
     }
@@ -202,8 +202,8 @@ export function convertToDNF(ast) {
     if (ast.op.id === 'or') {
         for (let i = 0; i < ast.sub.length; i++) {
             for (let j = 0; j < ast.sub.length; j++)
-                if (arePropsTheSame(convertToDNF(ast.sub[i]),
-                    convertToDNF(negateFormula(convertToDNF(ast.sub[j])))))
+                if (arePropsTheSame(convertToCNF(ast.sub[i]),
+                    convertToCNF(negateFormula(convertToCNF(ast.sub[j])))))
                     return makeAtomic('⊤');
         }
     }
@@ -239,16 +239,18 @@ export function convertToDNF(ast) {
             return chainUpAst(ast.sub[0].sub.map(sub => negateFormula(sub)), 'and');
     }
 
-    ast = applyDistributivity(ast, 'and');
+    ast = applyDistributivity(ast, 'or');
 
     return astPostprocess(ast);
 }
 
 function astPostprocess(ast) {
+    if (ast.type === 'atomic')
+        return ast;
     let simplifiedSubs = [];
     let needsAnotherIteration = false;
     for (let sub of ast.sub) {
-        let simplified = convertToDNF(sub);
+        let simplified = convertToCNF(sub);
         if (!arePropsTheSame(sub, simplified))
             needsAnotherIteration = true;
         simplifiedSubs.push(simplified);
@@ -256,7 +258,7 @@ function astPostprocess(ast) {
     ast.sub = simplifiedSubs;
 
     if (needsAnotherIteration)
-        return convertToDNF(ast);
+        return convertToCNF(ast);
 
     return ast;
 }

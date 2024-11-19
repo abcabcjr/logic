@@ -47,12 +47,23 @@ export function isFormulaSingleTerm(formulaAst) {
 }
 
 function applyDistributivity(ast, type) {
+    if (ast.type === 'atomic')
+        return ast;
+
+    //let subs = [];
+    //for (let sub of ast.sub)
+    //    subs.push(applyDistributivity(sub, type));
+    //ast.sub = subs;
+
+    if (type !== 'and' && type !== 'or')
+        return ast;
+
     if (ast.op.id === type) {
         let transformedIndices = [];
 
         let finalSubs = [];
 
-        let otherOp = type === 'and' ? 'or' : 'and'
+        let otherOp = type === 'and' ? 'or' : 'and';
         let flattenIndex = -1;
         let flattenAgainstIndex = -1;
 
@@ -60,11 +71,11 @@ function applyDistributivity(ast, type) {
         for (let sub of ast.sub) {
             i++;
             if (flattenIndex === -1 && sub.type === 'composite' && sub.op.id === otherOp)
-                flattenIndex = i-1;
+                flattenIndex = i - 1;
             else if (flattenAgainstIndex === -1 && (sub.type === 'atomic' || (sub.type === 'composite' && (sub.op.id === 'not' || sub.op.id === otherOp))))
-                flattenAgainstIndex = i-1;
+                flattenAgainstIndex = i - 1;
         }
-        
+
         if (flattenAgainstIndex !== -1 && flattenIndex !== -1) {
             let composite = ast.sub[flattenIndex];
             let primary = ast.sub[flattenAgainstIndex];
@@ -97,13 +108,13 @@ function applyDistributivity(ast, type) {
         }
 
         if (finalSubs.length === 1) {
-            if (transformedIndices.length > 0)
-                return convertToDNF(finalSubs[0]);
+            //if (transformedIndices.length > 0)
+            //    return applyDistributivity(finalSubs[0], type);
             return finalSubs[0];
         } else {
             ast.sub = finalSubs;
-            if (transformedIndices.length > 0)
-                return convertToDNF(ast);
+            //if (transformedIndices.length > 0)
+            //    return applyDistributivity(ast, type);
             return ast;
         }
     }
@@ -111,56 +122,60 @@ function applyDistributivity(ast, type) {
     return ast;
 }
 
-export function convertToDNF(ast) {
+function applyDeMorgan(ast) {
+    if (ast.type === 'atomic')
+        return ast;
+
+    let subs = [];
+    for (let sub of ast.sub)
+        subs.push(applyDeMorgan(sub));
+    ast.sub = subs;
+
+    if (ast.op.id === 'not' && ast.sub[0].type === 'composite') {
+        if (ast.sub[0].op.id === 'and')
+            return chainUpAst(ast.sub[0].sub.map(sub => negateFormula(sub)), 'or');
+
+        if (ast.sub[0].op.id === 'or')
+            return chainUpAst(ast.sub[0].sub.map(sub => negateFormula(sub)), 'and');
+    }
+
+    return ast;
+}
+
+function convertImplicationsAndEquivalences(ast) {
     if (ast.type === 'atomic')
         return ast;
 
     // convert implication
     if (ast.type === 'composite' && ast.op.id === 'implies') {
-        return convertToDNF(chainUpAst([negateFormula(ast.sub[0]), ast.sub[1]], 'or'));
+        ast = chainUpAst([negateFormula(ast.sub[0]), ast.sub[1]], 'or');
     }
 
     // convert equivalence
     if (ast.type === 'composite' && ast.op.id === 'eq') {
-        return convertToDNF(chainUpAst([
+        ast = chainUpAst([
             chainUpAst(ast.sub, 'and'),
             chainUpAst(ast.sub.map(sub => negateFormula(sub)), 'and')
-        ], 'or'));
+        ], 'or');
     }
 
-    // Double negation
-    if (ast.op.id === 'not' && ast.sub[0].type === 'composite' && ast.sub[0].op.id === 'not') {
-        return convertToDNF(ast.sub[0].sub[0]);
-    }
+    let subs = [];
+    for (let sub of ast.sub)
+        subs.push(convertImplicationsAndEquivalences(sub));
+    ast.sub = subs;
 
-    // idempotence
-    if (ast.op.id === 'and' || ast.op.id === 'or') {
-        let newSubs = [];
-        let originalLength = ast.sub.length;
+    return ast;
+}
 
-        for (let sub of ast.sub) {
-            let isNew = true;
-            let simplified = convertToDNF(sub);
-            for (let newSub of newSubs)
-                if (arePropsTheSame(simplified, newSub)) {
-                    isNew = false;
-                    break;
-                }
-            if (isNew)
-                newSubs.push(simplified);
-        }
-        ast.sub = newSubs;
+function doAssociativity(ast) {
+    if (ast.type === 'atomic')
+        return ast;
 
-        // don't end up in infinite recursion
-        if (originalLength !== ast.sub.length)
-            return convertToDNF(ast.sub.length < 2 ? ast.sub[0] : ast);
+    let subs = [];
+    for (let sub of ast.sub) {
+        subs.push(doAssociativity(sub));
     }
-    if (ast.op.id === 'eq' || ast.op.id === 'implies') {
-        if (arePropsTheSame(convertToDNF(ast.sub[0]), convertToDNF(ast.sub[1])))
-            return makeAtomic('⊤');
-        else if (ast.op.id === 'eq' && arePropsTheSame(convertToDNF(ast.sub[0]), convertToDNF(negateFormula(ast.sub[1]))))
-            return makeAtomic('⊥');
-    }
+    ast.sub = subs;
 
     // Associativity law (remove paranthesis)
     if (ast.op.id === 'and' || ast.op.id === 'or') {
@@ -177,8 +192,54 @@ export function convertToDNF(ast) {
 
         if (modified) {
             ast.sub = newSubs;
-            return convertToDNF(ast);
+            return doAssociativity(ast);
         }
+    }
+
+    return ast;
+}
+
+function simplify(ast) {
+    if (ast.type === 'atomic')
+        return ast;
+
+    let subs = [];
+    for (let sub of ast.sub)
+        subs.push(simplify(sub));
+    ast.sub = subs;
+
+    // Double negation
+    if (ast.op.id === 'not' && ast.sub[0].type === 'composite' && ast.sub[0].op.id === 'not') {
+        return simplify(ast.sub[0].sub[0]);
+    }
+
+    // idempotence
+    if (ast.op.id === 'and' || ast.op.id === 'or') {
+        let newSubs = [];
+        let originalLength = ast.sub.length;
+
+        for (let sub of ast.sub) {
+            let isNew = true;
+            let simplified = simplify(sub);
+            for (let newSub of newSubs)
+                if (arePropsTheSame(simplified, newSub)) {
+                    isNew = false;
+                    break;
+                }
+            if (isNew)
+                newSubs.push(simplified);
+        }
+        ast.sub = newSubs;
+
+        // don't end up in infinite recursion
+        if (originalLength !== ast.sub.length)
+            return simplify(ast.sub.length < 2 ? ast.sub[0] : ast);
+    }
+    if (ast.op.id === 'eq' || ast.op.id === 'implies') {
+        if (arePropsTheSame(simplify(ast.sub[0]), simplify(ast.sub[1])))
+            return makeAtomic('⊤');
+        else if (ast.op.id === 'eq' && arePropsTheSame(simplify(ast.sub[0]), simplify(negateFormula(ast.sub[1]))))
+            return makeAtomic('⊥');
     }
 
     // absorption
@@ -192,8 +253,8 @@ export function convertToDNF(ast) {
     if (ast.op.id === 'and') {
         for (let i = 0; i < ast.sub.length; i++) {
             for (let j = 0; j < ast.sub.length; j++)
-                if (arePropsTheSame(convertToDNF(ast.sub[i]),
-                    convertToDNF(negateFormula(convertToDNF(ast.sub[j])))))
+                if (arePropsTheSame(simplify(ast.sub[i]),
+                    simplify(negateFormula(simplify(ast.sub[j])))))
                     return makeAtomic('⊥');
         }
     }
@@ -202,8 +263,8 @@ export function convertToDNF(ast) {
     if (ast.op.id === 'or') {
         for (let i = 0; i < ast.sub.length; i++) {
             for (let j = 0; j < ast.sub.length; j++)
-                if (arePropsTheSame(convertToDNF(ast.sub[i]),
-                    convertToDNF(negateFormula(convertToDNF(ast.sub[j])))))
+                if (arePropsTheSame(simplify(ast.sub[i]),
+                    simplify(negateFormula(simplify(ast.sub[j])))))
                     return makeAtomic('⊤');
         }
     }
@@ -230,25 +291,51 @@ export function convertToDNF(ast) {
             return ast.sub[0];
     }
 
-    // De Morgan laws
-    if (ast.op.id === 'not' && ast.sub[0].type === 'composite') {
-        if (ast.sub[0].op.id === 'and')
-            return chainUpAst(ast.sub[0].sub.map(sub => negateFormula(sub)), 'or');
-
-        if (ast.sub[0].op.id === 'or')
-            return chainUpAst(ast.sub[0].sub.map(sub => negateFormula(sub)), 'and');
-    }
-
-    ast = applyDistributivity(ast, 'and');
-
-    return astPostprocess(ast);
+    return ast;
 }
 
-function astPostprocess(ast) {
+export function convertToNNF(ast) {
+    if (ast.type === 'atomic')
+        return ast;
+
+    ast = convertImplicationsAndEquivalences(ast);
+    ast = doAssociativity(ast);
+    ast = applyDeMorgan(ast);
+    ast = simplify(ast);
+    
+    return ast;
+}
+
+export function convertToDNF(ast) {
+    if (ast.type === 'atomic')
+        return ast;
+
+    ast = convertToNNF(ast);
+    //ast = applyDistributivity(ast, 'and');
+    ast = simplify(ast);
+
+    return ast;
+}
+
+export function convertToCNF(ast) {
+    if (ast.type === 'atomic')
+        return ast;
+
+    ast = convertToNNF(ast);
+    //ast = applyDistributivity(ast, 'or');
+    ast = simplify(ast);
+    
+    return ast;
+}
+
+function astPostprocess(ast, simplifyFn) {
+    if (ast.type === 'atomic')
+        return ast;
+
     let simplifiedSubs = [];
     let needsAnotherIteration = false;
     for (let sub of ast.sub) {
-        let simplified = convertToDNF(sub);
+        let simplified = simplifyFn(sub);
         if (!arePropsTheSame(sub, simplified))
             needsAnotherIteration = true;
         simplifiedSubs.push(simplified);
@@ -256,7 +343,7 @@ function astPostprocess(ast) {
     ast.sub = simplifiedSubs;
 
     if (needsAnotherIteration)
-        return convertToDNF(ast);
+        return simplifyFn(ast);
 
     return ast;
 }
