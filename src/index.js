@@ -1,8 +1,10 @@
 
+import { findSatisfiabilityStateForClauseSet } from "./clausesets.js";
 import { printFormulaState, printFormulaStateForNInterpretations } from "./hw/hw2.js";
 import { showFormalSyntax, testEq, testLogicalConsequence } from './hw/hw3.js';
 import { runDNF, truthFunctionToFormula } from './hw/hw4.js';
 import { showDNFandCNF, showNandOnly } from "./hw/hw5.js";
+import { checkClauseSet, cnfToClauseSet } from "./hw/hw6.js";
 
 let contentElem = document.getElementById('content');
 
@@ -102,4 +104,16 @@ let nandonlyBtn = document.getElementById('nandonly');
 
 nandonlyBtn.onclick = function () {
     showNandOnly(inputElem.value.trim())
+}
+
+let checkClauseSetBtn = document.getElementById('clausesethw6');
+
+checkClauseSetBtn.onclick = function () {
+    checkClauseSet(inputElem.value.trim());
+}
+
+let cnfToClauseBtn = document.getElementById('cnftoclause');
+
+cnfToClauseBtn.onclick = function () {
+    cnfToClauseSet(inputElem.value.trim());
 }

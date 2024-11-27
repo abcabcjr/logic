@@ -141,6 +141,98 @@ export function parseNew(input) {
     }
 }
 
+function parseClause(reader) {
+    if (reader.peek() !== '{')
+        throw new ParseError('Expected { to start clause, found ' + reader.peek() + ' instead.');
+    reader.advance();
+
+    let clause = {};
+    let isParsing = true;
+    let clauseCanBeSimplified = false;
+
+    while (isParsing) {
+        if (reader.peek() === '}')
+            break;
+
+        let char = reader.peek();
+
+        let isComplement = false;
+    
+        if (char === '¬') {
+            isComplement = true;
+            reader.advance();
+        }
+    
+        let nameFormula = readAtomicFormula(reader);
+
+        // already existed, wipe
+        if ((clause[nameFormula.name] && isComplement) || (clause[nameFormula.name] === false && !isComplement)) {
+            delete clause[nameFormula.name];
+            clauseCanBeSimplified = true;
+        } else clause[nameFormula.name] = !isComplement;
+
+        if (reader.peek() !== ',')
+            isParsing = false;
+        else reader.advance();
+    }
+
+    if (reader.peek() !== '}')
+        throw new ParseError('Expected clause to be ended with }, found ' + reader.peek() + ' instead.');
+    reader.advance();
+
+    return clauseCanBeSimplified ? null : clause;
+}
+
+export function parseClauseSet(input) {
+    const reader = new TextReader(input);
+
+    if (reader.peek() !== '{')
+        throw new ParseError('Expected { to start clause set, found ' + reader.peek() + ' instead.');
+    reader.advance();
+
+    let clausesRaw = [];
+    let propSet = new Set();
+
+    while (reader.peek() !== '}') {
+        const clause = parseClause(reader);
+        clausesRaw.push(clause);
+
+        for (let key in clause)
+            propSet.add(key);
+
+        if (reader.peek() === ',')
+            reader.advance();
+    }
+
+    if (reader.peek() !== '}')
+        throw new ParseError('Expected clause set to be ended with }, found ' + reader.peek() + ' instead.');
+
+    let clauses = [];
+
+    let props = Array.from(propSet).sort();
+
+    for (let clause of clausesRaw) {
+        if (clause === null)
+            continue;
+        // convert clause into number
+        let converted = 0;
+
+        for (let i = 0; i < props.length; i++) {
+            // 1 bit signifies if the proposition appears in the prop
+            // 1 bit signifies truth/false
+            converted |= ((1 << (i*2 + 1)) * (typeof clause[props[i]] === 'boolean'));
+            converted |= ((1 << (i*2)) * (clause[props[i]] ? 1 : 0));
+        }
+
+        clauses.push(converted);
+    }
+
+    return {
+        props: props,
+        clauses: clauses
+    }
+}
+
 export class ParseError extends Error {
     constructor(message) {
         super(message);

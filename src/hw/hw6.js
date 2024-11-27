@@ -1,0 +1,71 @@
+import { createConjunctionAstFromClauseSet, findSatisfiabilityStateForClauseSet } from "../clausesets.js";
+import { formatInterpretation, getSatisfiabilityState, isStateSatisfiable, isStateValid } from "../evaluate.js";
+import { parseClauseSet, parseNew } from "../parser.js";
+import { convertToCNF } from "../simplifier3.js";
+import { astToFormulaText, astToFormulaTextWithNInputGates, formatAstAsText, formatTableInfoAsHtmlTable } from "../tools.js";
+
+export function checkClauseSet(input) {
+    let clauseSet = parseClauseSet(input);
+
+    console.log(JSON.stringify(clauseSet));
+    console.log('Is satisfiable: ' + findSatisfiabilityStateForClauseSet(clauseSet));
+
+    let ast = createConjunctionAstFromClauseSet(clauseSet.props, clauseSet.clauses);
+    console.log(formatAstAsText(ast));
+
+    let state = getSatisfiabilityState(ast);
+
+    console.log(formatTableInfoAsHtmlTable(state.tableInfo).replace(/,/g, '').replace(/\n/g, ''));
+
+    if (isStateValid(state)) {
+        console.log('✔️Propositional formula is valid');
+    } else {
+        console.log('❌ Propositional formula is not valid');
+        console.log('Unsatisfied by the following interpretations:');
+
+        for (let i = 1; i <= state.satisfies.length; i++)
+            console.log(`    ${i}. ${formatInterpretation(state.satisfies[i - 1])}`);
+
+        if (isStateSatisfiable(state)) {
+            console.log('✔️However, formula is satisfiable under:');
+
+            for (let i = 1; i <= state.satisfies.length; i++)
+                console.log(`    ${i}. ${formatInterpretation(state.satisfies[i - 1])}`);
+        } else {
+            console.log('❌Formula is not satisfiable under any interpretation');
+        }
+    }
+}
+
+export function cnfToClauseSet(input) {
+    let ast = parseNew(input.trim());
+
+    let converted = convertToCNF(ast);
+
+    let clauses = [];
+
+    if (converted.type === 'atomic')
+        clauses.push('{' + converted.name + '}');
+    else if (converted.op.id === 'not')
+        clauses.push('{¬' + converted.name + '}');
+    else for (let sub of converted.sub) {
+        let clause = [];
+
+        if (sub.type === 'composite') {
+            if (sub.op.id === 'not')
+                clause.push('¬' + sub.sub[0].name);
+            else for (let literal of sub.sub) {
+                if (literal.type === 'atomic')
+                    clause.push(literal.name);
+                else if (literal.type === 'composite' && literal.op.id === 'not')
+                    clause.push('¬' + literal.sub[0].name);
+            }
+        } else {
+            clause.push(sub.name)
+        }
+
+        clauses.push('{' + clause.join(', ') + '}');
+    }
+
+    console.log('{' + clauses.join(', ') + '}');
+}
