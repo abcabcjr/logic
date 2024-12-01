@@ -1,4 +1,4 @@
-import { createConjunctionAstFromClauseSet, findSatisfiabilityStateForClauseSet } from "../clausesets.js";
+import { applyDPLL, createConjunctionAstFromClauseSet, findSatisfiabilityStateForClauseSet } from "../clausesets.js";
 import { formatInterpretation, getSatisfiabilityState, isStateSatisfiable, isStateValid } from "../evaluate.js";
 import { parseClauseSet, parseNew } from "../parser.js";
 import { convertToCNF } from "../simplifier3.js";
@@ -6,9 +6,11 @@ import { astToFormulaText, astToFormulaTextWithNInputGates, formatAstAsText, for
 
 export function checkClauseSet(input) {
     let clauseSet = parseClauseSet(input);
+    let clauses = clauseSet.clauses.slice(0);
 
     console.log(JSON.stringify(clauseSet));
     console.log('Is satisfiable: ' + findSatisfiabilityStateForClauseSet(clauseSet));
+    console.log('Is satisfiable by DPLL: ' + applyDPLL(clauseSet.props, clauses));
 
     let ast = createConjunctionAstFromClauseSet(clauseSet.props, clauseSet.clauses);
     console.log(formatAstAsText(ast));

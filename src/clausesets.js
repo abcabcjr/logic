@@ -220,3 +220,120 @@ export function createConjunctionAstFromClauseSet(props, clauses) {
 
     return chainUpAst(nodes, 'and');
 }
+
+function getFirstLiteral(props, clauses) {
+    for (let i = 0; i < props.length; i++) {
+        for (let clause of clauses) {
+            let state = getClausePropState(i, clause);
+
+            if (state.exists)
+                return {
+                    index: i,
+                    value: state.value
+                }
+        }
+    }
+}
+
+export function applyDPLL(props, clauses) {
+    if (clauses.length === 0)
+        return true;
+
+    console.log('Before DPLL clauses: ' + clauses.map(clause => printClause(props, clause)).join(', '));
+
+    // literal rule
+    for (let clause of clauses) {
+        if (clause === null)
+            continue;
+
+        let literal = getSingleLiteral(props, clause);
+
+        if (!literal)
+            continue;
+
+        // delete literal from all clauses
+        for (let i = 0; i < clauses.length; i++) {
+            if (clauses[i] === null)
+                continue;
+
+            let literalState = getClausePropState(literal.index, clauses[i]);
+
+            if (literalState.exists && literalState.value !== literal.value) {
+                clauses[i] = clearBitAtPos(clauses[i], literal.index*2);
+                clauses[i] = clearBitAtPos(clauses[i], literal.index*2+1);
+            }
+
+            // check if we should delete clause
+            if (literalState.exists && literalState.value === literal.value) {
+                clauses[i] = null;
+            }
+        }
+
+        console.log('Applied literal rule for ' + props[literal.index] + ' := ' + literal.value + ' => ' + clauses.filter(clause => clause !== null).map(clause => printClause(props, clause)).join(', '));
+    }
+
+    // pure literal rule
+    for (let i = 0; i < props.length; i++) {
+        let propStateCur = null;
+        let ok = true;
+
+        for (let j = 0; j < clauses.length; j++) {
+            if (clauses[j] === null)
+                continue;
+
+            let propState = getClausePropState(i, clauses[j]);
+
+            if (propStateCur === null && propState.exists)
+                propStateCur = propState;
+            else if (propStateCur !== null && propState.exists && propStateCur.value !== propState.value) {
+                ok = false;
+            }
+        }
+
+        if (ok && propStateCur !== null) {
+            // Delete clauses containing pure literal
+            for (let j = 0; j < clauses.length; j++)
+                if (clauses[j] !== null && getClausePropState(i, clauses[j]).exists)
+                    clauses[j] = null;
+
+            console.log('Applied pure literal rule for ' + props[i] + ' := ' + propStateCur.value + ' => ' + clauses.filter(clause => clause !== null).map(clause => printClause(props, clause)).join(', '));
+        }
+    }
+
+    const newClauses = clauses.filter(clause => clause !== null);
+
+    if (newClauses.length === 0)
+        return true;
+
+    for (let newClause of newClauses)
+        if (newClause === 0)
+            return false;
+
+    // Branch out
+
+    let firstLiteral = getFirstLiteral(props, newClauses);
+    
+    if (firstLiteral) {
+        console.log('Proceeding to branch out for literal ' + props[firstLiteral.index]);
+        let copy1 = newClauses.slice(0);
+        let newClause = 0;
+        newClause |= (1 << (firstLiteral.index*2+1));
+        copy1.push(newClause);
+
+        let result1 = applyDPLL(props, copy1);
+
+        if (result1)
+            return true;
+
+        newClause |= (1 << (firstLiteral.index*2));
+        let copy2 = newClauses.slice(0);
+        copy2.push(newClause);
+
+        let result2 = applyDPLL(props, copy2);
+
+        if (result2)
+            return true;
+    }
+
+    return false;
+}
