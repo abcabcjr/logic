@@ -10,10 +10,10 @@ function clearBitAtPos(num, pos) {
 }
 
 function getClausePropState(propIndex, clause) {
-    if (!getBitAtPos(clause, propIndex*2+1))
+    if (!getBitAtPos(clause, propIndex * 2 + 1))
         return { exists: false };
 
-    return { exists: true, value: (getBitAtPos(clause, propIndex*2) ? true : false) }
+    return { exists: true, value: (getBitAtPos(clause, propIndex * 2) ? true : false) }
 }
 
 function printClause(props, clause) {
@@ -50,16 +50,16 @@ function getResolvents(props, clause1, clause2) {
         let clause2State = getClausePropState(i, clause2);
 
         if (clause1State.exists && clause2State.exists && (clause1State.value !== clause2State.value)) {
-            let newClause1 = clearBitAtPos(clause1, i*2);
-            newClause1 = clearBitAtPos(clause1, i*2+1);
-            let newClause2 = clearBitAtPos(clause2, i*2);
-            newClause2 = clearBitAtPos(clause2, i*2+1);
+            let newClause1 = clearBitAtPos(clause1, i * 2);
+            newClause1 = clearBitAtPos(clause1, i * 2 + 1);
+            let newClause2 = clearBitAtPos(clause2, i * 2);
+            newClause2 = clearBitAtPos(clause2, i * 2 + 1);
 
             let resolvent = mergeClauses(props, newClause1, newClause2);
             // resolvent is a tautalogy => -1
             if (resolvent !== -1) {
-                resolvent = clearBitAtPos(resolvent, i*2);
-                resolvent = clearBitAtPos(resolvent, i*2+1);
+                resolvent = clearBitAtPos(resolvent, i * 2);
+                resolvent = clearBitAtPos(resolvent, i * 2 + 1);
                 resolvents.push(resolvent);
             }
         }
@@ -91,58 +91,71 @@ function applyDP(props, clauses) {
     //return clauses;
     console.log('Before DP clauses: ' + clauses.map(clause => printClause(props, clause)).join(', '));
 
-    // literal rule
-    for (let clause of clauses) {
-        if (clause === null)
-            continue;
+    let keepApplying = true;
 
-        let literal = getSingleLiteral(props, clause);
+    while (keepApplying) {
+        keepApplying = false;
 
-        if (!literal)
-            continue;
-
-        // delete literal from all clauses
-        for (let i = 0; i < clauses.length; i++) {
-            if (clauses[i] === null)
+        // literal rule
+        for (let clause of clauses) {
+            if (clause === null)
                 continue;
 
-            let literalState = getClausePropState(literal.index, clauses[i]);
+            let literal = getSingleLiteral(props, clause);
 
-            if (literalState.exists && literalState.value !== literal.value) {
-                clauses[i] = clearBitAtPos(clauses[i], literal.index*2);
-                clauses[i] = clearBitAtPos(clauses[i], literal.index*2+1);
-            }
-
-            // check if we should delete clause
-            if (literalState.exists && literalState.value === literal.value) {
-                clauses[i] = null;
-            }
-        }
-    }
-
-    // pure literal rule
-    for (let i = 0; i < props.length; i++) {
-        let propStateCur = null;
-        let ok = true;
-
-        for (let j = 0; j < clauses.length; j++) {
-            if (clauses[j] === null)
+            if (!literal)
                 continue;
 
-            let propState = getClausePropState(i, clauses[j]);
+            // delete literal from all clauses
+            for (let i = 0; i < clauses.length; i++) {
+                if (clauses[i] === null)
+                    continue;
 
-            if (propStateCur === null && propState.exists)
-                propStateCur = propState;
-            else if (propStateCur !== null && propState.exists && propStateCur.value !== propState.value) {
-                ok = false;
+                let literalState = getClausePropState(literal.index, clauses[i]);
+
+                if (literalState.exists && literalState.value !== literal.value) {
+                    clauses[i] = clearBitAtPos(clauses[i], literal.index * 2);
+                    clauses[i] = clearBitAtPos(clauses[i], literal.index * 2 + 1);
+                }
+
+                // check if we should delete clause
+                if (literalState.exists && literalState.value === literal.value) {
+                    clauses[i] = null;
+                }
             }
+
+            keepApplying = true;
+            console.log('Applied literal rule for ' + props[literal.index] + ' := ' + literal.value + ' => ' + clauses.filter(clause => clause !== null).map(clause => printClause(props, clause)).join(', '));
         }
 
-        if (ok && propStateCur !== null) {
-            // Delete clauses containing pure literal
-            for (let j = 0; j < clauses.length; j++)
-                if (clauses[j] !== null && getClausePropState(i, clauses[j]).exists)
-                    clauses[j] = null;
+        // pure literal rule
+        for (let i = 0; i < props.length; i++) {
+            let propStateCur = null;
+            let ok = true;
+
+            for (let j = 0; j < clauses.length; j++) {
+                if (clauses[j] === null)
+                    continue;
+
+                let propState = getClausePropState(i, clauses[j]);
+
+                if (propStateCur === null && propState.exists)
+                    propStateCur = propState;
+                else if (propStateCur !== null && propState.exists && propStateCur.value !== propState.value) {
+                    ok = false;
+                }
+            }
+
+            if (ok && propStateCur !== null) {
+                // Delete clauses containing pure literal
+                for (let j = 0; j < clauses.length; j++)
+                    if (clauses[j] !== null && getClausePropState(i, clauses[j]).exists) {
+                        clauses[j] = null;
+                        keepApplying = true;
+                    }
+
+                console.log('Applied pure literal rule for ' + props[i] + ' := ' + propStateCur.value + ' => ' + clauses.filter(clause => clause !== null).map(clause => printClause(props, clause)).join(', '));
+            }
         }
     }
 
@@ -164,7 +177,7 @@ export function findSatisfiabilityStateForClauseSet({ props, clauses }) {
         let changed = false;
 
         for (let i = 0; i < clauseSetCopy.length; i++) {
-            for (let j = i+1; j < clauseSetCopy.length; j++) {
+            for (let j = i + 1; j < clauseSetCopy.length; j++) {
                 let clause1 = clauseSetCopy[i];
                 let clause2 = clauseSetCopy[j];
 
@@ -241,62 +254,71 @@ export function applyDPLL(props, clauses) {
 
     console.log('Before DPLL clauses: ' + clauses.map(clause => printClause(props, clause)).join(', '));
 
-    // literal rule
-    for (let clause of clauses) {
-        if (clause === null)
-            continue;
+    let keepApplying = true;
 
-        let literal = getSingleLiteral(props, clause);
+    while (keepApplying) {
+        keepApplying = false;
 
-        if (!literal)
-            continue;
-
-        // delete literal from all clauses
-        for (let i = 0; i < clauses.length; i++) {
-            if (clauses[i] === null)
+        // literal rule
+        for (let clause of clauses) {
+            if (clause === null)
                 continue;
 
-            let literalState = getClausePropState(literal.index, clauses[i]);
+            let literal = getSingleLiteral(props, clause);
 
-            if (literalState.exists && literalState.value !== literal.value) {
-                clauses[i] = clearBitAtPos(clauses[i], literal.index*2);
-                clauses[i] = clearBitAtPos(clauses[i], literal.index*2+1);
-            }
-
-            // check if we should delete clause
-            if (literalState.exists && literalState.value === literal.value) {
-                clauses[i] = null;
-            }
-        }
-
-        console.log('Applied literal rule for ' + props[literal.index] + ' := ' + literal.value + ' => ' + clauses.filter(clause => clause !== null).map(clause => printClause(props, clause)).join(', '));
-    }
-
-    // pure literal rule
-    for (let i = 0; i < props.length; i++) {
-        let propStateCur = null;
-        let ok = true;
-
-        for (let j = 0; j < clauses.length; j++) {
-            if (clauses[j] === null)
+            if (!literal)
                 continue;
 
-            let propState = getClausePropState(i, clauses[j]);
+            // delete literal from all clauses
+            for (let i = 0; i < clauses.length; i++) {
+                if (clauses[i] === null)
+                    continue;
 
-            if (propStateCur === null && propState.exists)
-                propStateCur = propState;
-            else if (propStateCur !== null && propState.exists && propStateCur.value !== propState.value) {
-                ok = false;
+                let literalState = getClausePropState(literal.index, clauses[i]);
+
+                if (literalState.exists && literalState.value !== literal.value) {
+                    clauses[i] = clearBitAtPos(clauses[i], literal.index * 2);
+                    clauses[i] = clearBitAtPos(clauses[i], literal.index * 2 + 1);
+                }
+
+                // check if we should delete clause
+                if (literalState.exists && literalState.value === literal.value) {
+                    clauses[i] = null;
+                }
             }
+
+            keepApplying = true;
+            console.log('Applied literal rule for ' + props[literal.index] + ' := ' + literal.value + ' => ' + clauses.filter(clause => clause !== null).map(clause => printClause(props, clause)).join(', '));
         }
 
-        if (ok && propStateCur !== null) {
-            // Delete clauses containing pure literal
-            for (let j = 0; j < clauses.length; j++)
-                if (clauses[j] !== null && getClausePropState(i, clauses[j]).exists)
-                    clauses[j] = null;
+        // pure literal rule
+        for (let i = 0; i < props.length; i++) {
+            let propStateCur = null;
+            let ok = true;
 
-            console.log('Applied pure literal rule for ' + props[i] + ' := ' + propStateCur.value + ' => ' + clauses.filter(clause => clause !== null).map(clause => printClause(props, clause)).join(', '));
+            for (let j = 0; j < clauses.length; j++) {
+                if (clauses[j] === null)
+                    continue;
+
+                let propState = getClausePropState(i, clauses[j]);
+
+                if (propStateCur === null && propState.exists)
+                    propStateCur = propState;
+                else if (propStateCur !== null && propState.exists && propStateCur.value !== propState.value) {
+                    ok = false;
+                }
+            }
+
+            if (ok && propStateCur !== null) {
+                // Delete clauses containing pure literal
+                for (let j = 0; j < clauses.length; j++)
+                    if (clauses[j] !== null && getClausePropState(i, clauses[j]).exists) {
+                        clauses[j] = null;
+                        keepApplying = true;
+                    }
+
+                console.log('Applied pure literal rule for ' + props[i] + ' := ' + propStateCur.value + ' => ' + clauses.filter(clause => clause !== null).map(clause => printClause(props, clause)).join(', '));
+            }
         }
     }
 
@@ -312,12 +334,12 @@ export function applyDPLL(props, clauses) {
     // Branch out
 
     let firstLiteral = getFirstLiteral(props, newClauses);
-    
+
     if (firstLiteral) {
         console.log('Proceeding to branch out for literal ' + props[firstLiteral.index]);
         let copy1 = newClauses.slice(0);
         let newClause = 0;
-        newClause |= (1 << (firstLiteral.index*2+1));
+        newClause |= (1 << (firstLiteral.index * 2 + 1));
         copy1.push(newClause);
 
         let result1 = applyDPLL(props, copy1);
@@ -325,7 +347,7 @@ export function applyDPLL(props, clauses) {
         if (result1)
             return true;
 
-        newClause |= (1 << (firstLiteral.index*2));
+        newClause |= (1 << (firstLiteral.index * 2));
         let copy2 = newClauses.slice(0);
         copy2.push(newClause);
 
