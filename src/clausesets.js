@@ -1,11 +1,11 @@
 import { chainUpAst, makeAtomic, negateFormula } from "./treebuild.js";
 
 function getBitAtPos(num, pos) {
-    return (num >> pos) & 1;
+    return (num >> BigInt(pos)) & 1n;
 }
 
 function clearBitAtPos(num, pos) {
-    num &= ~(1 << pos);
+    num &= ~(1n << BigInt(pos));
     return num;
 }
 
@@ -338,8 +338,8 @@ export function applyDPLL(props, clauses) {
     if (firstLiteral) {
         console.log('Proceeding to branch out for literal ' + props[firstLiteral.index]);
         let copy1 = newClauses.slice(0);
-        let newClause = 0;
-        newClause |= (1 << (firstLiteral.index * 2 + 1));
+        let newClause = 0n;
+        newClause |= (1n << BigInt(firstLiteral.index * 2 + 1));
         copy1.push(newClause);
 
         let result1 = applyDPLL(props, copy1);
@@ -347,7 +347,7 @@ export function applyDPLL(props, clauses) {
         if (result1)
             return true;
 
-        newClause |= (1 << (firstLiteral.index * 2));
+        newClause |= (1n << BigInt(firstLiteral.index * 2));
         let copy2 = newClauses.slice(0);
         copy2.push(newClause);
 

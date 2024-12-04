@@ -8,7 +8,7 @@ export function checkClauseSet(input) {
     let clauseSet = parseClauseSet(input);
     let clauses = clauseSet.clauses.slice(0);
 
-    console.log(JSON.stringify(clauseSet));
+    //console.log(JSON.stringify(clauseSet.clauses.map(clause => clause.toString(2))));
     console.log('Is satisfiable: ' + findSatisfiabilityStateForClauseSet(clauseSet));
     console.log('Is satisfiable by DPLL: ' + applyDPLL(clauseSet.props, clauses));
 

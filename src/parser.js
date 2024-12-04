@@ -215,13 +215,13 @@ export function parseClauseSet(input) {
         if (clause === null)
             continue;
         // convert clause into number
-        let converted = 0;
+        let converted = 0n;
 
         for (let i = 0; i < props.length; i++) {
             // 1 bit signifies if the proposition appears in the prop
             // 1 bit signifies truth/false
-            converted |= ((1 << (i*2 + 1)) * (typeof clause[props[i]] === 'boolean'));
-            converted |= ((1 << (i*2)) * (clause[props[i]] ? 1 : 0));
+            converted |= ((1n << BigInt(i*2 + 1)) * ((typeof clause[props[i]] === 'boolean') ? 1n : 0n));
+            converted |= ((1n << BigInt(i*2)) * BigInt(clause[props[i]] ? 1 : 0));
         }
 
         clauses.push(converted);
