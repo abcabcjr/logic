@@ -11,6 +11,27 @@ export class TextReader {
         return this._input.charAt(this._index);
     }
 
+    expectText(value) {
+        let initial = this._index;
+
+        let data = '';
+
+        while (value !== data && value.startsWith(data)) {
+            data += this.peek();
+            this.advanceSimple();
+        }
+
+        if (this.peek() === ' ')
+            this.advance();
+
+        if (value === data) {
+            return true;
+        }
+
+        this._index = initial;
+        return false;
+    }
+
     advanceSimple() {
         this._index++;
     }
@@ -25,6 +46,7 @@ export class TextReader {
         do {
             this._index++;
         } while (this.hasNext() && this.peek() === ' ');
+        return true;
     }
 
     hasNext() {

@@ -5,6 +5,7 @@ import { showFormalSyntax, testEq, testLogicalConsequence } from './hw/hw3.js';
 import { runDNF, truthFunctionToFormula } from './hw/hw4.js';
 import { showDNFandCNF, showNandOnly } from "./hw/hw5.js";
 import { checkClauseSet, cnfToClauseSet } from "./hw/hw6.js";
+import { runFOPExpression } from "./hw/hw7.js";
 
 let contentElem = document.getElementById('content');
 
@@ -116,4 +117,10 @@ let cnfToClauseBtn = document.getElementById('cnftoclause');
 
 cnfToClauseBtn.onclick = function () {
     cnfToClauseSet(inputElem.value.trim());
+}
+
+let fopparseBtn = document.getElementById('fopparse');
+
+fopparseBtn.onclick = function () {
+    runFOPExpression(inputElem.value.trim());
 }
