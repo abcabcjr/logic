@@ -6,12 +6,12 @@ export function runFOPExpression(formulaText) {
     let signature = new LanguageSignature();
 
     signature.registerOperator('not', 'unary', '¬', 50);
-    signature.registerOperator('and', 'binary', '∧', 30, true);
-    signature.registerOperator('or', 'binary', '∨', 40, true);
-    signature.registerOperator('nand', 'binary', '|', 30, true);
-    signature.registerOperator('nor', 'binary', '▽', 40, true);
-    signature.registerOperator('eq', 'binary', '⇔', 10);
-    signature.registerOperator('implies', 'binary', '⇒', 20);
+    signature.registerOperator('and', 'narity', '∧', 30, 2);
+    signature.registerOperator('or', 'narity', '∨', 40, 2);
+    signature.registerOperator('nand', 'narity', '|', 30, 2);
+    signature.registerOperator('nor', 'narity', '▽', 40, 2);
+    signature.registerOperator('eq', 'narity', '⇔', 10, 2);
+    signature.registerOperator('implies', 'narity', '⇒', 20, 2);
 
     signature.registerFunction('f', 2);
     signature.registerFunction('g', 1);

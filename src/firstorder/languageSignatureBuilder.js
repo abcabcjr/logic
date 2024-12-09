@@ -3,7 +3,7 @@ export class LanguageSignature {
     constructor() {
         this.operators = {
             unary: {},
-            binary: {}
+            narity: {}
         };
         this.quantifiers = {};
         this.opIdToOperator = {};
@@ -18,11 +18,14 @@ export class LanguageSignature {
         };
     }
 
-    registerOperator(id, type, symbol, precedence, isComposable=false) {
+    registerOperator(id, type, symbol, precedence, arity=1) {
+        if (type === 'unary' && arity !== 1)
+            throw new Error('Unary operator can only have arity 1'); 
+
         this.operators[type][symbol] = {
             id: id,
             precedence: precedence,
-            composable: isComposable
+            arity: arity
         }
         this.opIdToOperator[id] = symbol;
     }
@@ -82,5 +85,13 @@ export class LanguageSignature {
 
     getQuantifierBySymbol(symbol) {
         return this.quantifiers[symbol];
+    }
+
+    getNarityOperatorBySymbol(symbol) {
+        return this.operators.narity[symbol];
+    }
+
+    getUnaryOperatorBySymbol(symbol) {
+        return this.operators.unary[symbol];
     }
 }
