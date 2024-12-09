@@ -32,6 +32,35 @@ export class TextReader {
         return false;
     }
 
+    expectRegex(regex) {
+        let initial = this._index;
+
+        let data = '';
+
+        while (data === '' || regex.test(data)) {
+            if (!this.peek()) {
+                data += ' ';
+                this._index++;
+                break;
+            }
+            data += this.peek();
+            this.advanceSimple();
+        }
+
+        data = data.slice(0, -1);
+        this._index--;
+
+        if (this.peek() === ' ')
+            this.advance();
+
+        if (regex.test(data)) {
+            return data;
+        }
+
+        this._index = initial;
+        return null;
+    }
+
     advanceSimple() {
         this._index++;
     }

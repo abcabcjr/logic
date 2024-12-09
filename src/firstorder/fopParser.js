@@ -94,8 +94,21 @@ function parsePossibleConstant(reader, signature) {
     let allConstants = signature.getAllConstants();
 
     for (let constant of allConstants) {
+        let constData = signature.getConstant(constant);
+        if (constData.regex) {
+            let value = reader.expectRegex(constData.regex);
+
+            if (value)
+                return {
+                    node: 'term',
+                    type: 'constant',
+                    value: constData.parseFn ? constData.parseFn(value) : value,
+                    valueType: constData.valueType
+                };
+        }
+
         if (reader.expectText(constant))
-            return signature.getConstant(constant);
+            return constData;
     }
 
     return null;
@@ -112,7 +125,7 @@ function parseQuantified(reader, signature) {
 
     let variable = readVariable(reader, signature);
 
-    let predicate = parsePrimary(reader, signature);
+    let predicate = parseFormula(reader, signature);
 
     if (!predicate)
         throw new ParseError('Expected formula node for quantifier ' + quantifierSymbol);
@@ -155,8 +168,8 @@ function parsePrimary(reader, signature) {
         if (unaryOp) {
             reader.advance();
             return {
-                node: 'formula',
-                type: 'operator',
+                node: unaryOp.returnType,
+                type: unaryOp.opType,
                 op: unaryOp.id,
                 sub: [
                     expectType(unaryOp.expects, parsePrimary(reader, signature))
@@ -190,28 +203,46 @@ function parseBinaryOperatorRightSide(reader, currentOperatorPrecedence, leftSid
 
         reader.advance();
 
-        let rightSideFormulas = [expectType(operator.expects, parsePrimary(reader, signature))];
-        let curArity = 1 + leftSideLen;
+        let rightSideFormulas = [parsePrimary(reader, signature)];
 
-        let nextOperator = signature.getNarityOperatorBySymbol(reader.peek());
+        // case 1: operand matches operator expect type
 
-        while (nextOperator && nextOperator.id == operator.id && curArity < operator.arity) {
-            reader.advance();
-            rightSideFormulas.push(expectType(operator.expects, parsePrimary(reader, signature)));
+        if (rightSideFormulas[0].node === operator.expects) {
+            let curArity = 1 + leftSideLen;
 
-            nextOperator = signature.getNarityOperatorBySymbol(reader.peek());
-            curArity++;
-        }
+            let nextOperator = signature.getNarityOperatorBySymbol(reader.peek());
+    
+            while (nextOperator && nextOperator.id == operator.id && curArity < operator.arity) {
+                reader.advance();
+                rightSideFormulas.push(expectType(operator.expects, parsePrimary(reader, signature)));
+    
+                nextOperator = signature.getNarityOperatorBySymbol(reader.peek());
+                curArity++;
+            }
+    
+            if (curArity !== operator.arity)
+                throw new ParseError('Expected ' + operator.arity + ' operands for ' + operator.id + ', found ' + curArity + ' instead.');
 
-        if (curArity !== operator.arity)
-            throw new ParseError('Expected ' + operator.arity + ' operands for ' + operator.id + ', found ' + curArity + ' instead.');
+            if (nextOperator && operator.precedence < nextOperator.precedence) {
+                rightSideFormulas = [parseBinaryOperatorRightSide(reader, operator.precedence + 1, rightSideFormulas[rightSideFormulas.length-1], rightSideFormulas.length, signature)];
+            }
+        } else {
+            // Move to next operator attempt
 
-        if (nextOperator && operator.precedence < nextOperator.precedence) {
-            rightSideFormulas = parseBinaryOperatorRightSide(reader, operator.precedence + 1, rightSideFormulas[rightSideFormulas.length-1], rightSideFormulas.length, signature);
+            let nextOperator = signature.getNarityOperatorBySymbol(reader.peek());
+
+            if (!nextOperator)
+                expectType(operator.expects, rightSideFormulas[0]);
+
+            rightSideFormulas = [parseBinaryOperatorRightSide(reader, nextOperator.precedence, rightSideFormulas[rightSideFormulas.length-1], rightSideFormulas.length, signature)];
+
+            /*console.table(rightSideFormulas);
+            for (let formula of rightSideFormulas)
+                expectType(operator.expects, formula);*/
         }
 
         leftSide = {
-            node: 'formula',
+            node: operator.returnType,
             type: operator.opType,
             op: operator.id,
             sub: [
@@ -219,6 +250,8 @@ function parseBinaryOperatorRightSide(reader, currentOperatorPrecedence, leftSid
             ].concat(rightSideFormulas)
         }
     }
+
+    return leftSide;
 }
 
 function parseFormula(reader, signature) {
@@ -236,7 +269,7 @@ export function parseNewFirstOrder(input, signature) {
         const expression = parseFormula(reader, signature);
 
         if (reader.hasNext())
-            throw new ParseError('Expected expression to end, found' + reader.peek() + ' instead.');
+            throw new ParseError('Expected expression to end, found ' + reader.peek() + ' instead.');
 
         return expression;
     } catch (e) {
