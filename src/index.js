@@ -65,7 +65,7 @@ lcBtn.onclick = function () {
 }
 
 let helperWrapper = document.getElementById('helper');
-let logicSymbols = ['∧', '∨', '¬', '⇔', '⇒', '∼', '⊨', '⊥', '⊤']
+let logicSymbols = ['∧', '∨', '¬', '⇔', '⇒', '∼', '⊨', '⊥', '⊤', '∃', '∀', '≥', '≤', '∈']
 
 for (let symbol of logicSymbols) {
     let btn = document.createElement('button');
