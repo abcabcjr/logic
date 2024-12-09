@@ -6,6 +6,7 @@ import { runDNF, truthFunctionToFormula } from './hw/hw4.js';
 import { showDNFandCNF, showNandOnly } from "./hw/hw5.js";
 import { checkClauseSet, cnfToClauseSet } from "./hw/hw6.js";
 import { runFOPExpression } from "./hw/hw7.js";
+import { runFOPExpressionHW8 } from "./hw/hw8.js";
 
 let contentElem = document.getElementById('content');
 
@@ -123,4 +124,10 @@ let fopparseBtn = document.getElementById('fopparse');
 
 fopparseBtn.onclick = function () {
     runFOPExpression(inputElem.value.trim());
+}
+
+let fopparseBtnHW8 = document.getElementById('fopparsehw8');
+
+fopparseBtnHW8.onclick = function () {
+    runFOPExpressionHW8(inputElem.value.trim());
 }

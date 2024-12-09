@@ -1,3 +1,4 @@
+const PRECEDENCE_MIN_FUNCTION = 1000000;
 
 export class LanguageSignature {
     constructor() {
@@ -18,16 +19,24 @@ export class LanguageSignature {
         };
     }
 
-    registerOperator(id, type, symbol, precedence, arity=1) {
+    registerOperator(id, type, symbol, precedence, arity=1, opType='logical') {
         if (type === 'unary' && arity !== 1)
             throw new Error('Unary operator can only have arity 1'); 
 
         this.operators[type][symbol] = {
             id: id,
+            opType: opType,
+            expects: opType === 'function' ? 'term' : 'formula',
             precedence: precedence,
             arity: arity
         }
         this.opIdToOperator[id] = symbol;
+    }
+
+    registerOperatorForFunction(functionName, symbol, precedence) {
+        let fn = this.getFunction(functionName);
+
+        this.registerOperator(functionName, fn.arity === 1 ? 'unary' : 'narity', symbol, PRECEDENCE_MIN_FUNCTION + precedence, fn.arity, 'function')
     }
 
     registerFunction(name, arity) {
