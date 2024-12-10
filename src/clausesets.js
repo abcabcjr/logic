@@ -168,7 +168,7 @@ export function findSatisfiabilityStateForClauseSet({ props, clauses }) {
     let clauseSetCopy = applyDP(props, JSON.parse(JSON.stringify(clauses)));
 
     for (let clause of clauseSetCopy)
-        if (clause === 0)
+        if (clause === 0n)
             return false;
 
     let stop = false;
@@ -181,7 +181,7 @@ export function findSatisfiabilityStateForClauseSet({ props, clauses }) {
                 let clause1 = clauseSetCopy[i];
                 let clause2 = clauseSetCopy[j];
 
-                if (clause1 === 0 || clause2 === 0)
+                if (clause1 === 0n || clause2 === 0n)
                     return false;
 
                 let resolvents = getResolvents(props, clause1, clause2);
@@ -189,7 +189,7 @@ export function findSatisfiabilityStateForClauseSet({ props, clauses }) {
                 for (let resolvent of resolvents) {
                     console.log('Resolvent: ' + printClause(props, clause1) + ' + ' + printClause(props, clause2) + ' -> ' + printClause(props, resolvent));
                     if (!clauseSetCopy.includes(resolvent)) {
-                        if (resolvent === 0)
+                        if (resolvent === 0n)
                             return false;
                         clauseSetCopy.push(resolvent);
                         changed = true;
@@ -209,7 +209,7 @@ export function findSatisfiabilityStateForClauseSet({ props, clauses }) {
 
     // check one last time after DP
     for (let clause of clauseSetCopy)
-        if (clause === 0)
+        if (clause === 0n)
             return false;
 
     return true;
@@ -328,7 +328,7 @@ export function applyDPLL(props, clauses) {
         return true;
 
     for (let newClause of newClauses)
-        if (newClause === 0)
+        if (newClause === 0n)
             return false;
 
     // Branch out
