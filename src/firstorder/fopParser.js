@@ -13,6 +13,9 @@ function readVariable(reader) {
     let name = reader.peek(); // should be verified before this function is called
     reader.advance();
 
+    if (name == null)
+        throw new ParseError('Expected variable, found end of input.');
+
     while (isDigit(reader.peek())) {
         name += reader.peek();
         reader.advanceSimple();
