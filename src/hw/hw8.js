@@ -47,7 +47,7 @@ export function runFOPExpressionHW8(formulaText) {
     signature.registerQuantifier('every', '∀');
 
     /* Constants */
-    signature.registerConstants(['a', 'b', 'c', 'R', 'N']);
+    signature.registerConstants(['R', 'N']);
     signature.registerConstant('numbers', /^[0-9]+$/, 'number', parseInt);
 
     let ast = null;

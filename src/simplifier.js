@@ -46,7 +46,7 @@ export function isFormulaSingleTerm(formulaAst) {
     return formulaAst.type === 'atomic' || formulaAst.op.id === 'not';
 }
 
-function applyDistributivity(ast, type) {
+function applyDistributivity(ast, type, pipeline) {
     if (ast.op.id === type) {
         let transformedIndices = [];
 
@@ -98,12 +98,12 @@ function applyDistributivity(ast, type) {
 
         if (finalSubs.length === 1) {
             if (transformedIndices.length > 0)
-                return convertToDNF(finalSubs[0]);
+                return pipeline.record(finalSubs[0], 'apply distributivity');
             return finalSubs[0];
         } else {
             ast.sub = finalSubs;
             if (transformedIndices.length > 0)
-                return convertToDNF(ast);
+                return pipeline.record(ast, 'apply distributivity');
             return ast;
         }
     }
@@ -111,26 +111,26 @@ function applyDistributivity(ast, type) {
     return ast;
 }
 
-export function convertToDNF(ast) {
+function applySimplifications(ast, pipeline, postProcessFn) {
     if (ast.type === 'atomic')
         return ast;
 
     // convert implication
     if (ast.type === 'composite' && ast.op.id === 'implies') {
-        return convertToDNF(chainUpAst([negateFormula(ast.sub[0]), ast.sub[1]], 'or'));
+        return pipeline.record(chainUpAst([negateFormula(ast.sub[0]), ast.sub[1]], 'or'), 'convert implication');
     }
 
     // convert equivalence
     if (ast.type === 'composite' && ast.op.id === 'eq') {
-        return convertToDNF(chainUpAst([
+        return pipeline.record(chainUpAst([
             chainUpAst(ast.sub, 'and'),
             chainUpAst(ast.sub.map(sub => negateFormula(sub)), 'and')
-        ], 'or'));
+        ], 'or'), 'convert equivalence');
     }
 
     // Double negation
     if (ast.op.id === 'not' && ast.sub[0].type === 'composite' && ast.sub[0].op.id === 'not') {
-        return convertToDNF(ast.sub[0].sub[0]);
+        return pipeline.record(ast.sub[0].sub[0], 'remove double negation');
     }
 
     // idempotence
@@ -140,7 +140,7 @@ export function convertToDNF(ast) {
 
         for (let sub of ast.sub) {
             let isNew = true;
-            let simplified = convertToDNF(sub);
+            let simplified = pipeline.record(sub);
             for (let newSub of newSubs)
                 if (arePropsTheSame(simplified, newSub)) {
                     isNew = false;
@@ -153,13 +153,14 @@ export function convertToDNF(ast) {
 
         // don't end up in infinite recursion
         if (originalLength !== ast.sub.length)
-            return convertToDNF(ast.sub.length < 2 ? ast.sub[0] : ast);
+            return pipeline.record(ast.sub.length < 2 ? ast.sub[0] : ast, 'idempotence');
     }
+    
     if (ast.op.id === 'eq' || ast.op.id === 'implies') {
-        if (arePropsTheSame(convertToDNF(ast.sub[0]), convertToDNF(ast.sub[1])))
-            return makeAtomic('⊤');
-        else if (ast.op.id === 'eq' && arePropsTheSame(convertToDNF(ast.sub[0]), convertToDNF(negateFormula(ast.sub[1]))))
-            return makeAtomic('⊥');
+        if (arePropsTheSame(pipeline.record(ast.sub[0]), pipeline.record(ast.sub[1])))
+            return pipeline.record(makeAtomic('⊤'), 'turn to tautology');
+        else if (ast.op.id === 'eq' && arePropsTheSame(pipeline.record(ast.sub[0]), pipeline.record(negateFormula(ast.sub[1]))))
+            return pipeline.record(makeAtomic('⊥'), 'turn to contradiction');
     }
 
     // Associativity law (remove paranthesis)
@@ -177,24 +178,24 @@ export function convertToDNF(ast) {
 
         if (modified) {
             ast.sub = newSubs;
-            return convertToDNF(ast);
+            return pipeline.record(ast, 'apply associativity');
         }
     }
 
     // absorption
     if (ast.op.id === 'and' && astListIncludesProp(ast.sub, '⊥'))
-        return makeAtomic('⊥');
+        return pipeline.record(makeAtomic('⊥'), 'apply absorption');
 
     if (ast.op.id === 'or' && astListIncludesProp(ast.sub, '⊤'))
-        return makeAtomic('⊤');
+        return pipeline.record(makeAtomic('⊤'), 'turn to tautology');
 
     // Complementarity by Contradiction
     if (ast.op.id === 'and') {
         for (let i = 0; i < ast.sub.length; i++) {
             for (let j = 0; j < ast.sub.length; j++)
-                if (arePropsTheSame(convertToDNF(ast.sub[i]),
-                    convertToDNF(negateFormula(convertToDNF(ast.sub[j])))))
-                    return makeAtomic('⊥');
+                if (arePropsTheSame(pipeline.record(ast.sub[i]),
+                    pipeline.record(negateFormula(pipeline.record(ast.sub[j])))))
+                    return pipeline.record(makeAtomic('⊥'), 'turn to contradiction');
         }
     }
 
@@ -202,53 +203,67 @@ export function convertToDNF(ast) {
     if (ast.op.id === 'or') {
         for (let i = 0; i < ast.sub.length; i++) {
             for (let j = 0; j < ast.sub.length; j++)
-                if (arePropsTheSame(convertToDNF(ast.sub[i]),
-                    convertToDNF(negateFormula(convertToDNF(ast.sub[j])))))
-                    return makeAtomic('⊤');
+                if (arePropsTheSame(pipeline.record(ast.sub[i]),
+                    pipeline.record(negateFormula(pipeline.record(ast.sub[j])))))
+                    return pipeline.record(makeAtomic('⊤'), 'turn to tautology');
         }
     }
 
     // clean NOT
     if (ast.op.id === 'not' && ast.sub[0].name === '⊤')
-        return makeAtomic('⊥');
+        return pipeline.record(makeAtomic('⊥'), 'turn to contradiction');
     if (ast.op.id === 'not' && ast.sub[0].name === '⊥')
-        return makeAtomic('⊤');
+        return pipeline.record(makeAtomic('⊤'), 'turn to tautology');
 
     // identity
     if (ast.op.id === 'and') {
         ast.sub = ast.sub.filter(prop => prop.name !== '⊤');
         if (ast.sub.length === 0)
-            return makeAtomic('⊤');
+            return pipeline.record(makeAtomic('⊤'), 'turn to tautology');
         else if (ast.sub.length === 1)
-            return ast.sub[0];
+            return pipeline.record(ast.sub[0], 'apply identity');
     }
     if (ast.op.id === 'or') {
         ast.sub = ast.sub.filter(prop => prop.name !== '⊥');
         if (ast.sub.length === 0)
-            return makeAtomic('⊥');
+            return pipeline.record(makeAtomic('⊥'), 'turn to contradiction');
         else if (ast.sub.length === 1)
-            return ast.sub[0];
+            return pipeline.record(ast.sub[0], 'apply identity');
     }
 
     // De Morgan laws
     if (ast.op.id === 'not' && ast.sub[0].type === 'composite') {
         if (ast.sub[0].op.id === 'and')
-            return chainUpAst(ast.sub[0].sub.map(sub => negateFormula(sub)), 'or');
+            return pipeline.record(chainUpAst(ast.sub[0].sub.map(sub => negateFormula(sub)), 'or'), 'apply de morgan laws');
 
         if (ast.sub[0].op.id === 'or')
-            return chainUpAst(ast.sub[0].sub.map(sub => negateFormula(sub)), 'and');
+            return pipeline.record(chainUpAst(ast.sub[0].sub.map(sub => negateFormula(sub)), 'and'), 'apply de morgan laws');
     }
 
-    ast = applyDistributivity(ast, 'and');
-
-    return astPostprocess(ast);
+    return postProcessFn(ast);
 }
 
-function astPostprocess(ast) {
+export function convertToDNF(ast, pipeline) {
+    return applySimplifications(ast, pipeline, (ast) => {
+        ast = applyDistributivity(ast, 'and', pipeline);
+
+        return astPostprocess(ast, pipeline);
+    });
+}
+
+export function convertToCNF(ast, pipeline) {
+    return applySimplifications(ast, pipeline, (ast) => {
+        //ast = applyDistributivity(ast, 'or', pipeline);
+
+        return astPostprocess(ast, pipeline);
+    });
+}
+
+function astPostprocess(ast, pipeline) {
     let simplifiedSubs = [];
     let needsAnotherIteration = false;
     for (let sub of ast.sub) {
-        let simplified = convertToDNF(sub);
+        let simplified = pipeline.record(sub);
         if (!arePropsTheSame(sub, simplified))
             needsAnotherIteration = true;
         simplifiedSubs.push(simplified);
@@ -256,7 +271,7 @@ function astPostprocess(ast) {
     ast.sub = simplifiedSubs;
 
     if (needsAnotherIteration)
-        return convertToDNF(ast);
+        return pipeline.record(ast);
 
     return ast;
 }

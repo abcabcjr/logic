@@ -1,8 +1,8 @@
 import { convertToNandOnly } from "../convert.js";
 import { parseNew } from "../parser.js";
+import { makePipeline } from "../pipeline.js";
 import { simplifyByQMC } from "../qmc.js";
-import { convertToDNF } from "../simplifier.js";
-import { convertToCNF } from "../simplifier3.js";
+import { convertToCNF, convertToDNF } from "../simplifier.js";
 import { astToFormulaText, astToFormulaTextWithNInputGates, copyAst, formatAstAsText } from "../tools.js";
 import { testEq } from "./hw3.js";
 
@@ -26,10 +26,12 @@ export function showDNFandCNF(formulaText) {
     if (!ast)
         return;
 
-    let cnf = (convertToCNF(copyAst(ast)));
+    let pipeline1 = makePipeline(convertToCNF);
+    let cnf = pipeline1.start.apply(pipeline1, [copyAst(ast)]);
     //for (let i = 0; i < 100; i++)
     //    cnf = convertToCNF(cnf);
-    let dnf = simplifyByQMC(convertToDNF(copyAst(ast)));
+    let pipeline2 = makePipeline(convertToDNF);
+    let dnf = pipeline2.start.apply(pipeline1, [copyAst(ast)]);
     //for (let i = 0; i < 100; i++)
     //    cnf = convertToDNF(dnf);
 

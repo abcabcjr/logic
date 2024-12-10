@@ -1,7 +1,8 @@
 import { applyDPLL, createConjunctionAstFromClauseSet, findSatisfiabilityStateForClauseSet } from "../clausesets.js";
 import { formatInterpretation, getSatisfiabilityState, isStateSatisfiable, isStateValid } from "../evaluate.js";
 import { parseClauseSet, parseNew } from "../parser.js";
-import { convertToCNF } from "../simplifier3.js";
+import { makePipeline } from "../pipeline.js";
+import { convertToCNF } from "../simplifier.js";
 import { astToFormulaText, astToFormulaTextWithNInputGates, formatAstAsText, formatTableInfoAsHtmlTable } from "../tools.js";
 
 export function checkClauseSet(input) {
@@ -13,7 +14,8 @@ export function checkClauseSet(input) {
     console.log('Is satisfiable by DPLL: ' + applyDPLL(clauseSet.props, clauses));
 
     let ast = createConjunctionAstFromClauseSet(clauseSet.props, clauseSet.clauses);
-    console.log(formatAstAsText(ast));
+    //console.log(formatAstAsText(ast));
+    return;
 
     let state = getSatisfiabilityState(ast);
 
@@ -42,7 +44,8 @@ export function checkClauseSet(input) {
 export function cnfToClauseSet(input) {
     let ast = parseNew(input.trim());
 
-    let converted = convertToCNF(ast);
+    let pipeline = makePipeline(convertToCNF);
+    let converted = pipeline.start.apply(pipeline, [ast]);
 
     let clauses = [];
 

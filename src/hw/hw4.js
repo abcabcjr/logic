@@ -1,4 +1,5 @@
 import { parseNew } from '../parser.js';
+import { makePipeline } from '../pipeline.js';
 import { simplifyByQMC } from '../qmc.js';
 import { convertToDNF } from '../simplifier.js';
 import { parseTsvTable, astToFormulaText, formatAstAsText, astToFormulaTextWithNInputGates } from '../tools.js';
@@ -68,8 +69,18 @@ export function runDNF(formulaText) {
     console.log(formatAstAsText(parsed));
     console.log('');
 
-    let simplified = convertToDNF(parsed);
+    let pipeline = makePipeline(convertToDNF);
+
+    let simplified = pipeline.start.apply(pipeline, [parsed]);
     console.log(formatAstAsText(simplified));
+    console.log('---------------------------------------');
+    console.log('Simplification steps:');
+    console.log('---------------------------------------');
+    for (let step of pipeline.steps) {
+        if (step.step)
+            console.log(step.step + ': ' + step.original + ' ---> ' + step.new);
+    }
+    console.log('---------------------------------------');
     console.log(astToFormulaTextWithNInputGates(simplified));
     
     let qmced = simplifyByQMC(simplified);
