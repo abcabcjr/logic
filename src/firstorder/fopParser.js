@@ -53,7 +53,7 @@ function parseFunction(functionData, reader, signature) {
 
     if (reader.peek() !== ')') {
         do {
-            args.push(parseFormula(reader, signature));
+            args.push(expectType('term', parseFormula(reader, signature)));
         } while (reader.peek() === ',' && reader.advance());
     }
 
@@ -147,15 +147,15 @@ function parseQuantified(reader, signature) {
 function parsePrimary(reader, signature) {
     let char = reader.peek();
 
-    let constant = parsePossibleConstant(reader, signature);
-
-    if (constant)
-        return constant;
-
     let parsedFn = parsePossibleFunctionOrPredicate(reader, signature);
 
     if (parsedFn)
         return parsedFn;
+
+    let constant = parsePossibleConstant(reader, signature);
+
+    if (constant)
+        return constant;
 
     if (signature.getQuantifierBySymbol(char))
         return parseQuantified(reader, signature);
