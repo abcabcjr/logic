@@ -21,7 +21,7 @@ export class LanguageSignature {
         };
     }
 
-    registerOperator(id, type, symbol, precedence, arity=1, opType='logical', returnType='formula') {
+    registerOperator(id, type, symbol, precedence, arity=1, opType='logical', returnType='formula', associativity='ltr') {
         if (type === 'unary' && arity !== 1)
             throw new Error('Unary operator can only have arity 1'); 
 
@@ -31,25 +31,26 @@ export class LanguageSignature {
             expects: opType !== 'logical' ? 'term' : 'formula',
             returnType: returnType,
             precedence: precedence,
+            associativity: associativity,
             arity: arity
         }
         this.opIdToOperator[id] = symbol;
     }
 
     registerLogicalOperator(id, type, symbol, precedence, arity=1) {
-        this.registerOperator(id, type, symbol, PRECEDENCE_MIN_LOGICAL + precedence, arity);
+        this.registerOperator(id, type, symbol, PRECEDENCE_MIN_LOGICAL + precedence, arity, 'logical', 'formula', 'rtl');
     }
 
-    registerOperatorForFunction(functionName, symbol, precedence) {
+    registerOperatorForFunction(functionName, symbol, precedence, associativity='ltr') {
         let fn = this.getFunction(functionName);
 
-        this.registerOperator(functionName, fn.arity === 1 ? 'unary' : 'narity', symbol, PRECEDENCE_MIN_FUNCTION + precedence, fn.arity, 'function', 'term')
+        this.registerOperator(functionName, fn.arity === 1 ? 'unary' : 'narity', symbol, PRECEDENCE_MIN_FUNCTION + precedence, fn.arity, 'function', 'term', associativity)
     }
 
-    registerOperatorForPredicate(predicateName, symbol, precedence) {
+    registerOperatorForPredicate(predicateName, symbol, precedence, associativity='ltr') {
         let fn = this.getPredicate(predicateName);
 
-        this.registerOperator(predicateName, fn.arity === 1 ? 'unary' : 'narity', symbol, PRECEDENCE_MIN_PREDICATE + precedence, fn.arity, 'predicate', 'formula')
+        this.registerOperator(predicateName, fn.arity === 1 ? 'unary' : 'narity', symbol, PRECEDENCE_MIN_PREDICATE + precedence, fn.arity, 'predicate', 'formula', associativity)
     }
 
     registerFunction(name, arity) {

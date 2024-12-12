@@ -85,28 +85,25 @@ function parseBinaryOperatorRightSide(reader, currentOperatorPrecedence, leftSid
 
         let nextOperator = tryGetBinaryOperator(reader.peek());
 
-        console.warn('Op, next op');
-        console.table(operator);
-        console.table(nextOperator);
-
         while (nextOperator && nextOperator.id == operator.id && operator.composable) {
             reader.advance();
             rightSideFormulas.push(parsePrimary(reader));
             nextOperator = tryGetBinaryOperator(reader.peek());
         }
 
-        console.warn('Next');
-        if (nextOperator)
-            console.warn(operator.precedence < nextOperator.precedence);
-
         if (nextOperator && operator.precedence < nextOperator.precedence) {
             rightSideFormulas = parseBinaryOperatorRightSide(reader, operator.precedence + 1, rightSideFormulas[rightSideFormulas.length-1]);
         }
 
-        console.warn('Left side');
-        console.table(leftSide);
-        console.warn('Right side');
-        console.table(rightSideFormulas);
+        if (leftSide.op && leftSide.op.id === operator.id && !operator.composable) {
+            let nowRightSide = leftSide.sub.slice(1);
+            leftSide = leftSide.sub[0];
+            rightSideFormulas = [{
+                type: 'composite',
+                op: operator,
+                sub: nowRightSide.concat(rightSideFormulas[0])
+            }];
+        }
 
         leftSide = {
             type: 'composite',

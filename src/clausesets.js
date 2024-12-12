@@ -165,7 +165,7 @@ function applyDP(props, clauses) {
 }
 
 export function findSatisfiabilityStateForClauseSet({ props, clauses }) {
-    let clauseSetCopy = applyDP(props, JSON.parse(JSON.stringify(clauses)));
+    let clauseSetCopy = applyDP(props, structuredClone(clauses));
 
     for (let clause of clauseSetCopy)
         if (clause === 0n)

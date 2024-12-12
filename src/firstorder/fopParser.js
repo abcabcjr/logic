@@ -223,7 +223,18 @@ function parseBinaryOperatorRightSide(reader, currentOperatorPrecedence, leftSid
 
         if (nextOperator && (nextOperator.expects !== operator.returnType || operator.precedence < nextOperator.precedence)) {
             rightSideFormulas = [parseBinaryOperatorRightSide(reader, operator.precedence + 1, rightSideFormulas[rightSideFormulas.length - 1], rightSideFormulas.length, signature)];
-        } 
+        }
+
+        if (leftSide.op === operator.id && operator.associativity === 'rtl') {
+            let nowRightSide = leftSide.sub.slice(1);
+            leftSide = leftSide.sub[0];
+            rightSideFormulas = [{
+                node: operator.returnType,
+                type: operator.opType,
+                op: operator.id,
+                sub: nowRightSide.concat(rightSideFormulas[0])
+            }];
+        }
 
         leftSide = {
             node: operator.returnType,
