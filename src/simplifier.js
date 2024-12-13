@@ -253,7 +253,7 @@ export function convertToDNF(ast, pipeline) {
 
 export function convertToCNF(ast, pipeline) {
     return applySimplifications(ast, pipeline, (ast) => {
-        //ast = applyDistributivity(ast, 'or', pipeline);
+        ast = applyDistributivity(ast, 'or', pipeline);
 
         return astPostprocess(ast, pipeline);
     });

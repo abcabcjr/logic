@@ -31,7 +31,7 @@ export function showDNFandCNF(formulaText) {
     //for (let i = 0; i < 100; i++)
     //    cnf = convertToCNF(cnf);
     let pipeline2 = makePipeline(convertToDNF);
-    let dnf = pipeline2.start.apply(pipeline1, [copyAst(ast)]);
+    let dnf = pipeline2.start.apply(pipeline2, [copyAst(ast)]);
     //for (let i = 0; i < 100; i++)
     //    cnf = convertToDNF(dnf);
 
