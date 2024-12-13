@@ -98,12 +98,12 @@ function applyDistributivity(ast, type, pipeline) {
 
         if (finalSubs.length === 1) {
             if (transformedIndices.length > 0)
-                return pipeline.record(finalSubs[0], 'apply distributivity');
+                return pipeline.again(finalSubs[0], 'apply distributivity');
             return finalSubs[0];
         } else {
             ast.sub = finalSubs;
             if (transformedIndices.length > 0)
-                return pipeline.record(ast, 'apply distributivity');
+                return pipeline.again(ast, 'apply distributivity');
             return ast;
         }
     }
@@ -117,12 +117,12 @@ function applySimplifications(ast, pipeline, postProcessFn) {
 
     // convert implication
     if (ast.type === 'composite' && ast.op.id === 'implies') {
-        return pipeline.record(chainUpAst([negateFormula(ast.sub[0]), ast.sub[1]], 'or'), 'convert implication');
+        return pipeline.again(chainUpAst([negateFormula(ast.sub[0]), ast.sub[1]], 'or'), 'convert implication');
     }
 
     // convert equivalence
     if (ast.type === 'composite' && ast.op.id === 'eq') {
-        return pipeline.record(chainUpAst([
+        return pipeline.again(chainUpAst([
             chainUpAst(ast.sub, 'and'),
             chainUpAst(ast.sub.map(sub => negateFormula(sub)), 'and')
         ], 'or'), 'convert equivalence');
@@ -130,7 +130,7 @@ function applySimplifications(ast, pipeline, postProcessFn) {
 
     // Double negation
     if (ast.op.id === 'not' && ast.sub[0].type === 'composite' && ast.sub[0].op.id === 'not') {
-        return pipeline.record(ast.sub[0].sub[0], 'remove double negation');
+        return pipeline.again(ast.sub[0].sub[0], 'remove double negation');
     }
 
     // idempotence
@@ -140,7 +140,7 @@ function applySimplifications(ast, pipeline, postProcessFn) {
 
         for (let sub of ast.sub) {
             let isNew = true;
-            let simplified = pipeline.record(sub);
+            let simplified = pipeline.again(sub);
             for (let newSub of newSubs)
                 if (arePropsTheSame(simplified, newSub)) {
                     isNew = false;
@@ -153,13 +153,12 @@ function applySimplifications(ast, pipeline, postProcessFn) {
 
         // don't end up in infinite recursion
         if (originalLength !== ast.sub.length)
-            return pipeline.record(ast.sub.length < 2 ? ast.sub[0] : ast, 'idempotence');
+            return pipeline.again(ast.sub.length < 2 ? ast.sub[0] : ast, 'idempotence');
     }
-    
     if (ast.op.id === 'eq' || ast.op.id === 'implies') {
-        if (arePropsTheSame(pipeline.record(ast.sub[0]), pipeline.record(ast.sub[1])))
+        if (arePropsTheSame(pipeline.again(ast.sub[0]), pipeline.again(ast.sub[1])))
             return pipeline.record(makeAtomic('⊤'), 'turn to tautology');
-        else if (ast.op.id === 'eq' && arePropsTheSame(pipeline.record(ast.sub[0]), pipeline.record(negateFormula(ast.sub[1]))))
+        else if (ast.op.id === 'eq' && arePropsTheSame(pipeline.again(ast.sub[0]), pipeline.again(negateFormula(ast.sub[1]))))
             return pipeline.record(makeAtomic('⊥'), 'turn to contradiction');
     }
 
@@ -178,13 +177,13 @@ function applySimplifications(ast, pipeline, postProcessFn) {
 
         if (modified) {
             ast.sub = newSubs;
-            return pipeline.record(ast, 'apply associativity');
+            return pipeline.again(ast);
         }
     }
 
     // absorption
     if (ast.op.id === 'and' && astListIncludesProp(ast.sub, '⊥'))
-        return pipeline.record(makeAtomic('⊥'), 'apply absorption');
+        return pipeline.record(makeAtomic('⊥'), 'turn to contradiction');
 
     if (ast.op.id === 'or' && astListIncludesProp(ast.sub, '⊤'))
         return pipeline.record(makeAtomic('⊤'), 'turn to tautology');
@@ -193,8 +192,8 @@ function applySimplifications(ast, pipeline, postProcessFn) {
     if (ast.op.id === 'and') {
         for (let i = 0; i < ast.sub.length; i++) {
             for (let j = 0; j < ast.sub.length; j++)
-                if (arePropsTheSame(pipeline.record(ast.sub[i]),
-                    pipeline.record(negateFormula(pipeline.record(ast.sub[j])))))
+                if (arePropsTheSame(pipeline.again(ast.sub[i]),
+                    pipeline.again(negateFormula(pipeline.again(ast.sub[j])))))
                     return pipeline.record(makeAtomic('⊥'), 'turn to contradiction');
         }
     }
@@ -203,8 +202,8 @@ function applySimplifications(ast, pipeline, postProcessFn) {
     if (ast.op.id === 'or') {
         for (let i = 0; i < ast.sub.length; i++) {
             for (let j = 0; j < ast.sub.length; j++)
-                if (arePropsTheSame(pipeline.record(ast.sub[i]),
-                    pipeline.record(negateFormula(pipeline.record(ast.sub[j])))))
+                if (arePropsTheSame(pipeline.again(ast.sub[i]),
+                    pipeline.again(negateFormula(pipeline.again(ast.sub[j])))))
                     return pipeline.record(makeAtomic('⊤'), 'turn to tautology');
         }
     }
@@ -219,25 +218,25 @@ function applySimplifications(ast, pipeline, postProcessFn) {
     if (ast.op.id === 'and') {
         ast.sub = ast.sub.filter(prop => prop.name !== '⊤');
         if (ast.sub.length === 0)
-            return pipeline.record(makeAtomic('⊤'), 'turn to tautology');
+            return pipeline.record(makeAtomic('⊤'), 'turn tautology');
         else if (ast.sub.length === 1)
-            return pipeline.record(ast.sub[0], 'apply identity');
+            return ast.sub[0];
     }
     if (ast.op.id === 'or') {
         ast.sub = ast.sub.filter(prop => prop.name !== '⊥');
         if (ast.sub.length === 0)
             return pipeline.record(makeAtomic('⊥'), 'turn to contradiction');
         else if (ast.sub.length === 1)
-            return pipeline.record(ast.sub[0], 'apply identity');
+            return ast.sub[0];
     }
 
     // De Morgan laws
     if (ast.op.id === 'not' && ast.sub[0].type === 'composite') {
         if (ast.sub[0].op.id === 'and')
-            return pipeline.record(chainUpAst(ast.sub[0].sub.map(sub => negateFormula(sub)), 'or'), 'apply de morgan laws');
+            return pipeline.record(chainUpAst(ast.sub[0].sub.map(sub => negateFormula(sub)), 'or'), 'apply de Morgan');
 
         if (ast.sub[0].op.id === 'or')
-            return pipeline.record(chainUpAst(ast.sub[0].sub.map(sub => negateFormula(sub)), 'and'), 'apply de morgan laws');
+            return pipeline.record(chainUpAst(ast.sub[0].sub.map(sub => negateFormula(sub)), 'and'), 'apply de Morgan');
     }
 
     return postProcessFn(ast);
@@ -245,7 +244,11 @@ function applySimplifications(ast, pipeline, postProcessFn) {
 
 export function convertToDNF(ast, pipeline) {
     return applySimplifications(ast, pipeline, (ast) => {
+        if (ast.type === 'atomic')
+            return ast; 
         ast = applyDistributivity(ast, 'and', pipeline);
+        if (ast.type === 'atomic')
+            return ast; 
 
         return astPostprocess(ast, pipeline);
     });
@@ -253,7 +256,11 @@ export function convertToDNF(ast, pipeline) {
 
 export function convertToCNF(ast, pipeline) {
     return applySimplifications(ast, pipeline, (ast) => {
+        if (ast.type === 'atomic')
+            return ast; 
         ast = applyDistributivity(ast, 'or', pipeline);
+        if (ast.type === 'atomic')
+            return ast; 
 
         return astPostprocess(ast, pipeline);
     });
@@ -263,7 +270,7 @@ function astPostprocess(ast, pipeline) {
     let simplifiedSubs = [];
     let needsAnotherIteration = false;
     for (let sub of ast.sub) {
-        let simplified = pipeline.record(sub);
+        let simplified = pipeline.again(sub);
         if (!arePropsTheSame(sub, simplified))
             needsAnotherIteration = true;
         simplifiedSubs.push(simplified);
@@ -271,7 +278,7 @@ function astPostprocess(ast, pipeline) {
     ast.sub = simplifiedSubs;
 
     if (needsAnotherIteration)
-        return pipeline.record(ast);
+        return pipeline.again(ast);
 
     return ast;
 }

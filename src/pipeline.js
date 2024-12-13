@@ -19,6 +19,23 @@ export function makePipeline(startFn) {
 
             this.originalAst.push(newAst);
 
+            //return this.startFn(step, this);
+            return step;
+        },
+        again: function (step, msg) {
+            let newAst = astToFormulaText(step);
+            let oldAst = this.originalAst.pop();
+
+            if (msg) {
+                this.steps.push({
+                    step: msg,
+                    new: newAst,
+                    original: oldAst
+                });
+            }
+
+            this.originalAst.push(newAst);
+
             return this.startFn(step, this);
         },
         start: function (ast) {
